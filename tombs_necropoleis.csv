@@ -1,779 +1,402 @@
-serial_no,district,gisno,x,y,RegNo,town_village,ToponymEN,ToponymGR,Other,nechropoleis_tombs,N_T_specifics,Earlier_Chronology,chronology,Chronology_specifics,Year
-1,AMM001,334,33.80764393,35.04779183,LarnM 1520.,Achna,,,Achna's dum area,N,N,,R,R,1990
-2,AMM002,407,34.01358993,35.03800545,CS 2949,Achna,Appidia/Ayios Georgios Teratsiotis,Αππίδια/Άγιος Γεώργιος Τερατσιωτής,,N,N,,H-R,H-R,2004
-3,AMM003,432,33.95888815,34.98886848,,Agia Napa,Ambas,Αμπάς,"S/Plan XLII/21 W1, plot 1549",N,N,,H-R,H and R,1983
-4,AMM004,400,34.02504672,34.9784778,,Agia Napa,Ammos tou Kampouri,Άμμος του Καμπούρη,"(S/Plan XLII/32, plot 5/3, 5/4, 5/5, 5/6).",N,N,,R,R,1983
-5,AMM005,399,34.00844721,34.98441069,,Agia Napa,Pethameni,Πεθαμένη,"S/Plan XLII/23 W1, number of plots around plot nos 40-43",N,N,,H-R,H and R,1983
-6,AMM006,433,33.93855527,34.99041315,,Agia Napa,Tornos,Τόρνος,"S/Plan XLII/20 W1 and W2, plot 107/1, 112-113",T,T,,H-R,H-R,1997
-7,AMM007,434,33.94965051,34.99365492,,Agia Napa,Filina,Φιλίνα,"S/Plan XLII/12 Ε2, plot 13-28, 60.11-60.15",T,T,,R,LR,1983
-8,AMM008,402,33.95310237,34.98073849,CS 2203/T1,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,2nd c. BC-1st c. AD,1989
-9,AMM009,402,33.95310237,34.98073849,CS 2203/T2,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,2nd c. BC-2nd c. AD,1989
-10,AMM010,402,33.95310237,34.98073849,CS 2203/T3,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,CC,R,CC-LR,1989
-11,AMM011,402,33.95310237,34.98073849,CS 2203/T4,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,EH-LR,1989
-12,AMM012,402,33.95310237,34.98073849,CS 2203/T5,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H-R,1989
-13,AMM013,402,33.95310237,34.98073849,CS 2203/T6,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,2nd c. BC-3rd c. AD,1989
-14,AMM014,402,33.95310237,34.98073849,CS 2203/T7,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H II-LR,1989
-15,AMM015,402,33.95310237,34.98073849,CS 2203/T8,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H,H II,1989
-16,AMM016,402,33.95310237,34.98073849,CS 2203/T9,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H,H,1989
-17,AMM017,402,33.95310237,34.98073849,CS 2203/T10,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H-R,1989
-18,AMM018,402,33.95310237,34.98073849,CS 2203/T11,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,2nd c. BC-2nd c. AD,1989
-19,AMM019,402,33.95310237,34.98073849,CS 2203/T12,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,2nd c. AD,1989
-20,AMM020,402,33.95310237,34.98073849,CS 2203/T13,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H-R,1989
-21,AMM021,402,33.95310237,34.98073849,CS 2203/T14,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H,H,1989
-22,AMM022,402,33.95310237,34.98073849,CS 2203/T15,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H-R,1989
-23,AMM023,402,33.95310237,34.98073849,CS 2203/T16,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H II-R (4th c. AD),1989
-24,AMM024,402,33.95310237,34.98073849,CS 2203/T17,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H-R,1989
-25,AMM025,402,33.95310237,34.98073849,CS 2203/T18,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H-R,1989
-26,AMM026,402,33.95310237,34.98073849,CS 2203/T19,Agia Napa,Makronissos,Μακρόνησος,S/Plan XLII/21 Ν2,T,T,,H-R,H(-R),1989
-27,AMM027,197,33.85878215,35.32107215,,Agios Andronikos,Plaka,Πλάκα,,N,N,,R,R,1973
-28,AMM028,193,34.15204981,35.48909234,CS 1648,Agios Andronikos,Skotomenos,Σκοτωμένος,,N,N,CC,H,CC-H,1967
-29,AMM029,195,33.9343603,35.34102947,,Agios Elias,Kinanerades,Κινανεράδες,,N,N,,R,R,1973
-30,AMM030,196,33.94741784,35.34642536,,Agios Elias,Palaia Avgolida,Παλαιά Αυγολίδα,,N,N,,R,R,1973
-31,AMM031,194,33.95269231,35.32722338,,Agios Elias,Spilios,Σπήλιος,,N,N,,H-R,H-R,1973
-32,AMM032,199,33.82327961,35.32415424,,Agios Iacovos,Livadhi,Λειβάδι,,N,N,,H-R,H-R,1973
-33,AMM033,435,33.80621306,35.33771031,CS 2089,Agios Iacovos,Asproyeia,Ασπρογειά,,N,N,,H,H,1967
-34,AMM034,224,33.65631869,35.36025449,CS 2024,Agios Nikolaos (Lefkonoikou),Ellinospilios,Ελληνόσπηλιος,,N,N,,H-R,H-R,1973
-35,AMM035,459,33.88113747,35.19473002,,Agios Serghios,,,At the entrance to the village from the Famagusta road,T,T,,H,H,1916
-36,AMM036,225,33.8834948,35.1898669,T1,Agios Serghios,Archangelos,Αρχάγγελος,,T,T,,H-R,H-R,1974
-39,AMM039,200,34.23333067,35.47508033,CS 1390,Agios Symeon,Katsiaourena,Κατσιαούρενα,,N,N,H,H,H,1965
-40,AMM040,320,34.02874245,35.36663179,CS 1564/T3,Agios Theodoros,,,In the village,T,T,,H-R,H I-ER I/ER II,1966
-41,AMM041,456,34.03407084,35.32543535,CS 1576,Agios Theodoros,Troullin tou Kamilari,Τρουλλίν του Καμηλάρη,Valia forest (XV 23 E),N,N,CC,H,CC-H,1966
-42,AMM042,198,34.04562991,35.33055194,CS 1578,Agios Theodoros,Akrotiri,Ακρωτήρι,Valia forest,N,N,CC,H,CC-H,1966
-43,AMM043,436,34.0324572,35.32556656,CS 2160,Agios Theodoros,Alaas,Αλαάς,,N,7 (looted tombs part of a wider cemetery),,H,H,1974
-44,AMM044,202,33.77696353,35.41171929,,Akanthou,Agios Perpiros,Άγιος Πέρπυρος,,N,N,,H,H,1973
-45,AMM045,201,33.75367971,35.40720796,,Akanthou,Agios Theodoros,Άγιος Θεόδωρος,,N,N,,H,H (?),1973
-46,AMM046,405,33.77695074,35.39006612,CS 2108,Akanthou,Niati,Νιάτη,,N,N,,H,H,1974
-47,AMM047,226,33.92124275,35.15617725,"TrA, FM 168, TrB, FM 169, TrE, TrC, FM 170, TrD, FM 171, 172, TrE, FM 173",Ammochostos,Karaolos,Καράολος,North of Ammochostos new hardour area,N,N,,H-R,H (-R),1965
-48,AMM048,226,33.92124275,35.15617725,T1/FM Inv. no 165,Ammochostos,Karaolos,Καράολος,North of Ammochostos new hardour area,T,T,,H-R,H-R,1965
-49,AMM049,226,33.92124275,35.15617725,T2/FM Inv. no 167,Ammochostos,Karaolos,Καράολος,North of Ammochostos new port,T,T,,H-R,H-R (?),1965
-50,AMM050,406,33.88280576,35.3804271,,Ardana,Plaki,Πλακί,Kantara forest,N,N,,R,R (?),1973
-51,AMM051,401,33.81877044,35.06415071,CS 2225,Avgorou,Vrisoudia,Βρυσούδια,,N,N,CA,H,CA-H,1975
-52,AMM052,206,33.88466754,35.42120843,,Davlos,Kakos,Κακος,,N,N,,H,H,1973
-53,AMM053,207,33.92385609,35.42635482,,Davlos,Terkellovounos,Τερκελλόβουνος,,N,N,CC,R,CC (?)-R,1973
-54,AMM054,205,33.88767124,35.40590135,CS 2062/T1,Davlos,Trapeza,Τραπέζα,,T,T,,H,H,1973
-55,AMM055,205,33.88767124,35.40590135,CS 2213,Davlos,Trapeza,Τραπέζα,,N,N,,H-R,H-R,1975
-56,AMM056,408,33.89576325,35.42097626,,Davlos,Varkes,Βάρκες,,T,T,,R,R (?),1973
-57,AMM057,236,33.85874741,35.39484932,,Flamoudi,Ampelia,Αμπέλια,,N,N,,H,H (?),1973
-58,AMM058,235,33.87245696,35.409454,,Flamoudi,Lithosourka,Λιθοσούρκα,,N,N,,H-R,H-R,1972
-59,AMM059,237,33.82623037,35.40803951,,Flamoudi,Pallouri,Παλλούρι,,N,N,,H,Early necropolis reused in LH,1972
-60,AMM060,336,33.86337612,35.41297417,,Flamoudi,Spilios (tou Tsiali),Σπήλιος (του Τσιαλή),,T,T,,H,H,1972
-61,AMM061,337,33.85196008,35.40500586,,Flamoudi,Varkes,Βαρκές (Bίρκες),,N,N,CC,H-R,CC-R,1973
-62,AMM062,339,33.86571446,35.39278857,,Flamoudi,Trachonas,Τράχωνας,,N,N,,H,H,1972
-63,AMM063,455,34.30816351,35.52075814,,Galinoporni,,,1 mile east of the village/close to the ruined church of Ayia Anna,T,T,,H,H (?),U
-64,AMM064,322,34.30327175,35.52134285,,Galinoporni,,,,N,N,,H-R,H and R,1888
-65,AMM065,203,34.01421665,35.32403769,CS 1382,Gastria,Monastiraki,Μοναστηράκι,,T,T,,H,H,1966
-66,AMM066,204,34.0081075,35.32615101,"CS 2164, CS 2171",Gastria,Eliochoria,Ελιοχώρια,,N,N,,H,H,1974
-67,AMM067,204,34.0081075,35.32615101,CS 2171,Gastria,Eliochoria,Ελιοχώρια,201 m north of the archaic cemetery,N,N (3 tombs part of a wider cemetery),,H,H,1974
-68,AMM068,323,33.6980296,35.21793639,,Genagra,,,village (?),N,N,,H,H,1951
-69,AMM069,214,33.94534161,35.32065876,,Gerani,Trachonas tis Monargas,Τράχωνας της Μοναργάς,"Sh/Plan XV/28E1, plot 220/2",N,N,,H-R,H-R,1973
-70,AMM070,208,33.71534252,35.07640051,CS 1566,Kontea,Ayios Mamas,Άγιος Μάμας,,N,N,,H,H,1966
-71,AMM071,324,34.27581458,35.50918897,CS 1715,Koroveia,,,,T,T,,H,H,1968
-72,AMM072,457,34.30338974,35.49574905,T1,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-73,AMM073,457,34.30338974,35.49574905,T2,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-74,AMM074,457,34.30338974,35.49574905,T3,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-75,AMM075,457,34.30338974,35.49574905,T4,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-76,AMM076,457,34.30338974,35.49574905,T5,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-77,AMM077,457,34.30338974,35.49574905,T6,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-78,AMM078,457,34.30338974,35.49574905,T7,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-79,AMM079,457,34.30338974,35.49574905,T8,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-80,AMM080,457,34.30338974,35.49574905,T9,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-81,AMM081,457,34.30338974,35.49574905,T10,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-82,AMM082,457,34.30338974,35.49574905,T11,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-83,AMM083,457,34.30338974,35.49574905,T12,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-84,AMM084,457,34.30338974,35.49574905,T13,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-85,AMM085,457,34.30338974,35.49574905,T14,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-86,AMM086,457,34.30338974,35.49574905,T15,Koroveia,Kountoura Trachonia,Κούντουρα-Τραχωνιάς,,T,T,,H,H,1927
-87,AMM087,409,34.14003352,35.42826597,CS 1776/T2,Koma tou Yialou,Ayia Solomoni,Αγία Σολωμονή,1/2 mile east of the village,T,T,,H,H I,1970
-88,AMM088,212,34.12040023,35.4379477,CS 1616/T1,Koma tou Yialou,Kortylas,Κορτυλάς,,Τ,Τ,,Η,Η,1966
-89,AMM089,209,33.97125888,35.44049636,CS 2216,Komi (Kepir),Aloupos,Αλουπός,/,N,N,,H-R,H-R,1975
-90,AMM090,229,34.01595796,35.41470757,,Komi (Kepir),Ayia Marina,Αγία Μαρίνα,,N,N,,H,H,1973
-91,AMM091,210,33.95717377,35.44344985,,Komi (Kepir),Vikli,Βικλί,,N,N,,H,H,1973
-92,AMM092,211,33.98083636,35.44429738,,Komi (Kepir),Klima,Κλήμα,"Sh/Plan VII/2 E1, plot 2",T,T,,H,H,1973
-93,AMM093,213,33.82890198,35.26744285,CS 1545,Lapathos,Varkes,Βαρκές,,Τ,Τ,,H,Η Ι,1966
-94,AMM094,230,33.73214391,35.26025871,CS 2027/T2,Lefkonoiko,,,village (opposite the police station),Τ,Τ,,Η,Η,1973
-95,AMM095,325,33.85787984,35.1976525,FM 161,Limnia,,,,T,T,,R,R,1965
-96,AMM096,327,33.89090205,35.00587566,CS 1367,Liopetri,,,village,Τ,Τ,,R,R,1962
-97,AMM097,232,33.83158299,35.35042948,CS 1637/T1,Mandres,Melissouthkia,Μελισσούθκια,NE of the village (Kantara forest),T,T,,H,H,1967
-98,AMM098,231,33.84446115,35.35051483,,Mandres,Plousia,Πλουσιά,,N,N,,H-R,H-R,1973
-99,AMM099,333,33.77639071,35.21044419,CS 2132,Maratha,Vrysin,Βρυσίν,,N,N,,R,R,1974
-100,AMM100,332,33.61775102,35.22219124,CS 1380,Marathovounos,Alonia tou Pishia,Αλώνια του Πισία,,N,N,,H-R,H-R,1964
-101,AMM101,326,33.802046,35.234758,,Milia,,,,T,T,,R,R,1914
-102,AMM102,214,33.94534161,35.32065876,CS 1517/T1,Monarga,Trachonas (tis Monargas),Τράχωνας της Μοναργάς,,T,T,,H,H,1965
-103,AMM103,214,33.94534161,35.32065876,CS 1519,Monarga,Trachonas (tis Monarkas),Τράχωνας της Μοναρκάς,,N,N,,H,H,1965
-104,AMM104,214,33.94534161,35.32065876,,Monarga,Trachonas tis Monargas,Τράχωνας της Μοναργάς,"Sh/Plan XV/28E1, plot 220/2",N,N,,H-R,H-R,1973
-105,AMM105,215,34.23725475,35.46986212,CS 1388,Neta,Pyrogi,Πυρογή,,N,N,CC,H-R,CC-H-R,1965
-106,AMM106,410,34.03205939,35.03126973,CS 2898,Paralimni,Protaras,Πρωταράς,,N,N,,R,R,1999
-107,AMM107,216,33.97487852,35.35049438,CS 1791,Patriki,Fragkafkolia,Φραγκαφκολιά,,Ts,Ts,,R,R,1970
-108,AMM108,233,33.77047891,35.2051823,CS 1793,Peristerona,Krotiri,Κρωτήρι,1/2 mile south of the village,T,T,,H,H I,1970
-109,AMM109,233,33.77047891,35.2051823,CS 1793 (T. no 2),Peristerona,Grotiri,Γροτήρι,,T,T,CA,H,CA-H (?),1970
-110,AMM110,328,33.76084282,35.21704374,CS 2035,Peristerona,,,In the village,T,T,,H,H,1973
-113,AMM113,330,33.75928264,35.21995757,CS 1361,Peristeronopigi,,,In the village,T,T,,H,H,1962
-114,AMM114,329,33.77081181,35.22609562,FM 164,Pigi,,,,T,T,,H,H I,1965
-115,AMM115,329,33.77081181,35.22609562,FM 165,Pigi,,,,T,T,,H,H I,1965
-116,AMM116,238,33.67514222,35.2435736,CS 406,Psyllatos,Moutti,Μούττη,,N,N,CG,H,"CG, H",1956
-117,AMM117,228,34.43319197,35.64916721,Τ32Α,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,,H,3rd c. BC,1937
-118,AMM118,228,34.43319197,35.64916721,T33,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,,H,3rd - beginning of 2nd c. BC,1937
-119,AMM119,228,34.43319197,35.64916721,T34,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,,H,3rd - beginning of 2nd c. BC,1937
-120,AMM120,228,34.43319197,35.64916721,T35,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,,H,TPQ 3rd c. BC,1937
-121,AMM121,228,34.43319197,35.64916721,T36,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,,H,TPQ  250 BC,1937
-122,AMM122,228,34.43319197,35.64916721,T37,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,CC,H,TPQ 396 BC for the early burials,1937
-123,AMM123,228,34.43319197,35.64916721,T44,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,CC,H,CC-H,1937
-124,AMM124,228,34.43319197,35.64916721,T46,Rizokarpaso,Afentrika-Limnionas,Αφέντρικα/Λιμνιόνας,,T,T,,H,3rd c. BC for the last burials,1937
-125,AMM125,227,34.36886511,35.6253448,T1,Rizokarpaso,Vrysi,Βρύση (Βρυσί),,T,T,,H,TPQ 3rd c. BC,1937
-126,AMM126,227,34.36886511,35.6253448,T2,Rizokarpaso,Vrysi,Βρύση (Βρυσί),,T,T,,H,TPQ  3rd c. BC,1937
-127,AMM127,227,34.36886511,35.6253448,T5,Rizokarpaso,Vrysi,Βρύση (Βρυσί),,T,T,,H,TPQ  3rd c. BC,1937
-128,AMM128,227,34.36886511,35.6253448,T6,Rizokarpaso,Vrysi,Βρύση (Βρυσί),,T,T,,H,TPQ  3rd c. BC,1937
-129,AMM129,437,34.36554578,35.62381881,T10,Rizokarpaso,Tsambres,Τσάμπρες,,T,T,,H,TPQ  3rd c. BC,1937
-130,AMM130,437,34.36554578,35.62381881,T11,Rizokarpaso,Tsambres,Τσάμπρες,,T,T,,H,End of 4th c. BC,1937
-131,AMM131,437,34.36554578,35.62381881,T11A,Rizokarpaso,Tsambres,Τσάμπρες,,T,T,,H,TPQ  3rd c. BC,1937
-132,AMM132,437,34.36554578,35.62381881,T15,Rizokarpaso,Tsambres,Τσάμπρες,,T,T,,H,TPQ  end 4th-beginning 3rd c. BC,1937
-133,AMM133,437,34.36554578,35.62381881,T16,Rizokarpaso,Tsambres,Τσάμπρες,,T,T,CC,H,second half of 4th c.-beginning 3rd c. BC,1937
-134,AMM134,437,34.36554578,35.62381881,T28,Rizokarpaso,Tsambres,Τσάμπρες,,T,T,,H,TPQ  3rd c. BC,1937
-135,AMM135,438,34.38455249,35.63144672,CS 1535,Rizokarpaso,Kremmasti,Κρεμμαστή,,N,N,,H-R,H-R,1958
-144,AMM144,331,33.70181821,35.1573008,CS 2179,Sinta,Siradash,,,Ν,Ν,MBA-LBA,R,MBA-LBA-R,1957
-145,AMM145,217,33.85238511,35.16626952,,Styllos,Kokkina,Κόκκινα,,N,N,,H,H,1965
-146,AMM146,217,33.85238511,35.16626952,CS 1560,Stylloi,Κόκκινες (Κότσινες),Κόκκινες (Κότσινες),,N,N,,H,H,1966
-147,AMM147,218,33.84716546,35.28868357,,Sygkrasi,Plativounos,,,N,N,,H-R,H and R,1973
-149,AMM149,458,33.90933121,34.97455149,CS 2643,Sotira,,,"Sh/Plan XLII/27,W1 (coastal area opposite the ""Γοργόνα"" hotel)",N,N,,H-R,H II-R,1982
-150,AMM150,335,33.89186266,35.28603545,,Trikomo,,,,T,T,,R,2nd c. AD,1960
-151,AMM151,460,33.86578868,35.28625577,,Trikomo,Ayios Sinesios,Άγιος Συνέσιος,Sh/Plan XV/41 E2 (plots 126-130),N,N,,H-R,H-R,1973
-152,AMM152,234,33.87069784,35.2888496,,Trikomo,Vounos ton Krinon,Βουνός των Κρηνών,"Sh/Plan XV/41 E1, E2 (plots 231, 233, 271)",N,N,,H-R,H-R,1973
-153,AMM153,223,33.87766405,35.32076919,,Trikomo,Kafkallia A,Καυκαλλιά Α,Sh/Plan XV/27 E2 (plots 23-27),N,N,CC,H,CC-H (?),1973
-154,AMM154,223,33.87766405,35.32076919,,Trikomo,Kafkallia B,Καυκαλλιά Β,Sh/Plan XV/36 W1 (plot 61/1),Ts,Ts (unspecified),,H-R,H-R,1973
-155,AMM155,223,33.87766405,35.32076919,,Trikomo,Kafkallia C,Καυκαλλιά Γ,Sh/Plan XV/36 W2 (plot 61),N,N,,H,H,1973
-156,AMM156,222,33.91465318,35.27665364,,Trikomo,Kavalloi,Καβάλλοι,Sh/Plan XV/51 Ε2 (plot 25/2),N,N,,H-R,H-R,1973
-157,AMM157,219,33.89931182,35.31480958,,Trikomo,Matsouki,Ματσούκι,"Sh/Plan XV/26 Ε1, Ε2 & 27 W2 (plots 52, 55-60, 115)",N,N,,H-R,H-R,1973
-158,AMM158,220,33.89868335,35.31209903,,Trikomo,Vounari,Βουνάρι,"Sh/Plan XV/26 E2 (plots 116-119, 196-198)",N,N,"CG, CA",H,"CG, CA, H",1973
-159,AMM159,335,33.89186266,35.28603545,,Trikomo,,,In the village,N,N,,H,H,1973
-160,AMM160,221,33.90854244,35.26359165,CS 2095,Trikomo,Charafti,Χάραφτη,,N,N,CC,H,CC-H,1965
-161,AMM161,321,33.65115455,35.14081133,,Vatili,,,,N,N,,H-R,H and R,1889
-163,KER002,241,32.94890514,35.29885035,CS 93,Agia Eirini,Ksirafes,Ξιφάρες,,T,T,,H,H,1955
-164,KER003,241,32.94890514,35.29885035,CS 94,Agia Eirini,Ksirafes,Ξιφάρες,,T,T,,H,H,1955
-165,KER004,239,32.9508608,35.30454015,CS 95,Agia Eirini,Loura,Λούρα,,N,N,,H,H,1955
-166,KER005,240,32.95587353,35.30026903,CS 142,Agia Eirini,Liontos,Λιόντος,,N,N,CA,R,CA-R,1955
-167,KER006,242,32.95759203,35.30176181,CS 896,Agia Eirini,Foradomantra,Φοραδόμαντρα,,N,N,CA,H,CA-H,1958
-168,KER007,243,32.95439688,35.30461687,CS 897,Agia Eirini,Koukkopetres,Κουκκόπετρες,,T,T,CA,H,CA-H,1958
-169,KER008,244,32.951568,35.29628681,CS 902,Agia Eirini,Kattouthkies,Καττουθκιές,,N,N,,H,H,1958
-170,KER009,338,33.404711,35.315358,KM 99/T27,Agios Epiktitos,Chrysochorafon,Χρυσοχώραφον,,T,T,,H-R,H-R,1971
-171,KER010,338,33.404711,35.315358,KM 101/T28,Agios Epiktitos,Chrysochorafon,Χρυσοχώραφον,,T,T,,H-R,H-R,1971
-172,KER011,246,33.28254119,35.29497807,CS 769,Agirda,Bostanlik,Bostanlik,,N,N,,H-R,H-R,1958
-173,KER012,247,33.27126065,35.29873369,CS 773,Agirda,Kutranli Maghra,Kutranli Maghra,,N,N,,H,H,1958
-174,KER013,245,33.26679806,35.28470015,CS 779,Agirda,Boc Koyiak,Boc Koyiak,,N,N,,H,H,1958
-175,KER014,248,33.08316889,35.27655968,CS 71,Asomatos,Tris Elies,Τρεις Ελιές,,N,N,,H,H,1955
-176,KER015,249,33.10488699,35.26491462,CS 230,Asomatos,Halospita,Χαλόσπιτα,,N,N,,R,R,1955
-177,KER016,250,33.08811984,35.26942246,CS 334,Asomatos,Lakia tis Evretis,Λακιά της Ευρετής,,N,N,,R,R,1955
-178,KER017,252,33.07771453,35.26081027,CS 347,Asomatos,Aloupotrypes,Αλουπότρυπες,,N,N,,H,H,1955
-179,KER018,251,33.06855237,35.2650163,CS 952,Asomatos,Trimithkia,Τριμίθκια,,N,N,,H,H,1958
-180,KER019,292,33.3017286,35.31101506,CS 1046,Bellapais,Petromoudia,Πετρομούδια,,N,N,,H,H,1959
-181,KER020,258,33.33097128,35.27431273,,Dikomo (Pano),Mantres tou Iona,Μάντρα του Ιωνά,,T,T,,H-R,H-R,1957
-182,KER021,258,33.33097128,35.27431273,CS 787,Dikomo (Pano),Mantra tou Iona,Μάντρα του Ιωνά,,N,N,CG,H,CG and H,1958
-183,KER022,260,33.31597776,35.28404389,CS 750,Dikomo,Pigadia,Πηγάδια,,N,N,,H,H,1958
-184,KER023,257,33.30983005,35.27349692,CS 753,Dikomo,Tourchellos,Tourchellos,,N,N,CG,H,CG-H,1958
-185,KER024,259,33.31330868,35.28668269,CS 800,Dikomo,Kryon Neron,Κρυόν νερόν,,N,N,,H,H,1958
-186,KER025,261,33.04786259,35.32093136,CS 8,Diorios,Lakkos tou Kourri,Λάκκος του Κούρρης,,N,N,,R,R,1955
-187,KER026,262,33.05269675,35.31976582,CS 11,Diorios,Lakkouthkia,Λακκουθκιά,,N,N,,H-R,H-R,1955
-188,KER027,264,33.02035837,35.2685681,CS 118,Diorios,(Laxia tou) Hadji Bairam,(Λαξιά του) Hadji Bairam,,N,N,,H,H,1955
-189,KER028,265,33.00522032,35.2866236,CS 240,Diorios,Mahania (Makhenia),Mahania (Makhenia),,N,N,,H-R,H-R,1955
-190,KER029,263,33.04811964,35.3090277,CS 285,Diorios,Palaiomantra,Παλαιόμαντρα,,N,N,,H,H,1955
-192,KER031,266,33.21699845,35.33363651,CS 1185,El(ai)a,Vrysi,Βρύσι,,N,N,,H,H (?),1959
-193,KER032,267,33.09416941,35.31027704,CS 29,Kampιli,Margi,Μαργί,,N,N,,R,R,1955
-194,KER033,268,33.08975816,35.29722477,CS 34,Kampιli,Kafkalla,Καφκάλλα,,N,N,,R,R,1955
-195,KER034,269,33.0476487,35.25734501,CS 99,Kalon Chorion (Kapouti),Kapnistos,Καπνιστός,,N,N,,H,H,1955
-196,KER035,269,33.0476487,35.25734501,CS 126,Kalon Chorion (Kapouti),Kapnistos,Καπνιστός,,N,N,,R,R,1955
-198,KER037,270,33.05337724,35.25513148,CS 170,Kalon Chorion (Kapouti),Pallouteri,Παλλουτερή,,N,N,MBA,R,MBA and R,1955
-199,KER038,272,33.05165171,35.23801244,CS 203,Kalon Chorion (Kapouti),Foiniki,Φοινίκι,,N,N,,H-R,H-R,1955
-200,KER039,271,33.03225903,35.22403501,CS 222,Kalon Chorion (Kapouti),Melissia,Μελίσσια,,N,N,CC,H,CC-H,1955
-201,KER040,276,33.18991677,35.33831701,CS 1113,Karavas,Ayia Eirini,Αγία Ειρήνη,,N,N,CG,H,CG-H,1959
-202,KER041,273,33.22279288,35.33204711,CS 1202,Karavas,Archaggelos,Αρχάγγελος,,N,N,,H,H,1959
-203,KER042,275,33.23052266,35.33601095,CS 1221,Karavas,Karydia tou Markou,Καρυδιά του Μάρκου,,N,N,,R,R,1959
-204,KER043,274,33.23305337,35.32928567,"CS 1237, CS 1239",Karavas,Palaiomonastiron,Παλαιομονάστηρον,,N,N,,R,R,1959
-205,KER044,277,33.07009784,35.2940881,CS 1397/T1,Karpashia,Shiapia,Σσιάπια,"S/Plan XΙ/43 E., plot 82",T,T,,H-R,H-R,1964
-207,KER046,468,33.31972,35.34129,,Keryneia,,,"Within the yard of a private house in Keryneia town, near the Orthodox Church",T,T,,R,R,1914
-208,KER047,468,33.31972,35.34129,,Keryneia,,,"Within the yard of a private house in Keryneia town, near the Orthodox Church",T,T,,R,R,1914
-209,KER048,468,33.31972,35.34129,,Keryneia,,,"Within the yard of a private house in Keryneia town, near the Orthodox Church",T,T,,R,R,1914
-213,KER052,396,33.31614156,35.34113631,KM 52/T3,Keryneia,,,City centre (Dome Hotel),T,T,,H-R,H-R,1965
-214,KER053,396,33.31614156,35.34113631,KM 90,Keryneia,,,City centre,T,T,,R,R,1970
-215,KER054,396,33.31614156,35.34113631,KM 91,Keryneia,,,City centre,T,T,,R,R,1970
-216,KER055,396,33.31614156,35.34113631,KM 92/T23,Keryneia,,,City centre,T,T,,R,R,1970
-217,KER056,396,33.31614156,35.34113631,KM 93,Keryneia,,,City centre,T,T,,R,R,1970
-218,KER057,396,33.31614156,35.34113631,KM 94,Keryneia,,,City centre,T,T,,R,R,1970
-219,KER058,396,33.31614156,35.34113631,KM 95/T26,Keryneia,,,City centre,T,T,,H,H,1970
-220,KER059,396,33.31614156,35.34113631,KM 102/T29,Keryneia,,,Kato Keryneia,T,T,,H-R,H-R,1971
-221,KER060,396,33.31614156,35.34113631,KM 104/T31,Keryneia,,,Kato Keryneia,T,T,,H-R,H-R,1971
-222,KER061,396,33.31614156,35.34113631,KM 105/T32,Keryneia,,,Kato Keryneia,T,T,,H-R,H-R,1971
-223,KER062,396,33.31614156,35.34113631,KM 109/T34,Keryneia,,,City centre,T,T,,H,H-B,1972
-224,KER063,396,33.31614156,35.34113631,KM 123,Keryneia,,,City centre,T,T,,H-R,H-R,1973
-225,KER064,396,33.31614156,35.34113631,CS 618,Keryneia,,,Town,N,N,,H,H,1957
-228,KER067,278,33.00407466,35.34415021,CS 65,Kormakitis,Panayia,Παναγία,,N,N,CG,H,CG-H,1955
-229,KER068,278,33.00407466,35.34415021,CS 66,Kormakitis,Panayia/Lakhlakh,Παναγία/Λάχλαχ,,N,N,,H-R,H-R,1955
-230,KER069,279,32.966591,35.34781537,CS 116,Kormakitis,Herissa (Sherisses),Χέρισσα (Sherisses),,N,N,,H,H,1955
-231,KER070,282,32.98838446,35.36616329,CS 290,Kormakitis,Yerman tou Κυριάκου (Krikaki),Γείρμαν του Κυριάκου,,N,N,,H,H,1955
-232,KER071,281,32.99581454,35.36775622,CS 304,Kormakitis,Ayios Yeoryios,Άγιος Γεώργιος,,N,N,,H,H,1955
-233,KER072,280,33.02319588,35.34341549,CS 991,Kormakitis,Halospita,Χαλόσπιτια,,N,N,,H,H,1958
-234,KER073,388,33.0001346,35.33200581,CS 991,Kormakitis,Patsallies,Πατσαλλιές,,N,N,,H,H,1958
-235,KER074,283,33.23058283,35.28272112,CS 1006,Krini,Yere Oldu,,,N,N,,H,H,1959
-236,KER075,284,33.22684879,35.28279957,CS 1008,Krini,Koja Tarlasi,,,N,N,CA,H,CA-H,1959
-237,KER076,469,33.13938435,35.30895763,,Larnaka tis Lapithou,Elia tis kampanas,Ελιά της καμπάνας,,N,N,,H-R,H-R,1877
-238,KER077,469,33.13938435,35.30895763,CS 2254,Larnaka tis Lapithou,Elia tis kampanas,Ελιά της καμπάνας,,N,N,CC,H,CC-H,1975
-239,KER078,469,33.13938435,35.30895763,CS 82,Larnaka tis Lapithou,Kathari,Καθαρή,,N,N,CG,H,CG and H,1955
-240,KER079,469,33.13938435,35.30895763,CS 1374,Larnaka tis Lapithou,Perikoftos,Περικοφτός,Near by the village cemetery,T,T,,R,R-Early Christian,1964
-241,KER080,469,33.13938435,35.30895763,CS 292,Larnaka tis Lapithou,Vrysi tou Flourentzou,Βρύσι του Φλουρέντζου,,N,N,,R,R,1955
-244,KER083,287,33.14798021,35.35516147,CS 519,Lapithos,Htolithari (Phtolikhari),Χτολιθάρι,,N,N,,H,H,1957
-245,KER084,285,33.16052861,35.3501767,CS 524,Lapithos,Vrysi tou Barba,Βρύση του Μπάρμπα,,N,N,,R,R,1957
-246,KER085,285,33.16052861,35.3501767,CS 528,Lapithos,Vrysi tou Barba,Βρύση του Μπάρμπα,,N,N,,H,H,1957
-248,KER087,286,33.16949479,35.34954776,CS 536,Lapithos,Airiotissa,Αιριώτισσα (Αρκότισσα),,N,N,CG,H,CG and H,1957
-249,KER088,290,33.17486935,35.34421053,CS 542,Lapithos,Stavros,Σταυρός,,N,N,,H,H,1957
-250,KER089,289,33.15331797,35.34363429,CS 643,Lapithos,Mantra tou Vizou,Μάντρα του Βίζου,,N,N,,H,H,1957
-251,KER090,288,33.16064251,35.33588867,CS 855,Lapithos,Asproyi,Ασρπογή,,N,N,,H,H,1958
-252,KER091,291,33.18243801,35.33380384,CS 1107,Lapithos,Prostemenos,Προστεμένος,,N,N,,H,H,1959
-253,KER092,412,33.18267647,35.33874089,CS 1117,Lapithos,Ayios Minas,Άγιος Μηνάς,,N,N,,H,H,1959
-254,KER093,413,33.07641962,35.31068951,T17,Myrtou,Sfayion,Σφαγείον,,T,T,,R,1st c. AD,1951
-255,KER094,413,33.07641962,35.31068951,T18,Myrtou,Sfayion,Σφαγείον,,T,T,,R,1st c. AD (?),1951
-256,KER095,413,33.07641962,35.31068951,T19,Myrtou,Sfayion,Σφαγείον,,T,T,,R,1st c. AD,1951
-257,KER096,413,33.07641962,35.31068951,T20,Myrtou,Sfayion,Σφαγείον,,T,T,,H,3rd c. BC (?),1951
-258,KER097,268,33.08975816,35.29722477,CS 6,Myrtou,Kafkalla,Καφκάλλα,,N,N,,H-R,H-R,1955
-259,KER098,268,33.08975816,35.29722477,CS 9,Myrtou,Mirsinia/Kafkalla,Μιρσίνια/Καφκάλλα,,N,N,CG,R,CG-R,1955
-260,KER099,293,33.21103445,35.32449278,CS 1170,Palaesophos,Mersineri,Μερσινέρι,,N,N,,R,R,1959
-261,KER100,295,33.19529284,35.28811494,CS 1003,Pileri,Kafkalla/Makrotrachona,Καφκάλλα/Μακροτράχωνα,,N,N,CG,H,CG and H,1959
-262,KER101,296,33.21861467,35.28308086,CS 1010,Pileri,Veran Arasi,,,N,N,CG,H,CG and H,1959
-263,KER102,294,33.20906733,35.29490064,CS 1023,Pileri,Yarin Alti,,,N,N,,H-R,H-R,1959
-266,KER105,298,33.17836091,35.30568493,CS 1031,Sysklipos,Mouttonevron,Μουττόνεβρον,,N,N,,R,R,1959
-267,KER106,297,33.17877386,35.30250853,CS 1032,Sysklipos,Pylos,Πύλος,,N,N,,R,R,1959
-269,KER108,299,33.36917182,35.27390641,CS 837,Sychari,Ziziros,Ζίζιρος,,N,N,,H,H,1958
-270,KER109,256,33.12759575,35.35553411,CS 508,Vasileia,Varkes/Vanilas,Βαρκές/Vanilas,,N,N,,H,H,1957
-271,KER110,255,33.09871592,35.33583699,CS 594,Vasileia,Kampos tou Loi,Κάμπος του Λοή,,N,N,,R,R,1957
-272,KER111,253,33.11251379,35.33254469,CS 600,Vasileia,Petra pou chalase,Πέτρα που χάλασε,,N,N,,R,R,1957
-273,KER112,254,33.1111137,35.33392698,CS 602,Vasileia,Petra tis Rodous,Πέτρα της Ροδούς,,N,N,,H,H,1957
-274,LAR001,123,33.38365704,34.81203156,LarnM 1303,Agios Theodoros,Kaminia,Καμίνια,,T,T,,H,H,U
-275,LAR002,14,33.43401659,34.77515037,CS 2708,Agios Theodoros,Alonia ton Plakon,Αλώνια των Πλακών,,Ts,Ts,,R,R-M,1990
-276,LAR003,16,33.46874627,34.82785778,CS 2913,Anafotia,Kokkines,Κόκκινες,,N,N,,R,R,2001
-277,LAR004,439,33.56613209,34.96110601,CS 2593,Aradippou,Panayia ton Amplelion,Παναγία των Αμπελιών,South of Panayia Aimatousa church,Ts,Ts (2?),,H-R,H-R,1991
-279,LAR006,17,33.61058961,34.94133919,CS 2269/T2,Aradippou,Koukoulas,Κουκουλάς,1km south of the village,T,T,,H-R,H-R,1975
-280,LAR007,18,33.60706962,34.9364973,CS 2364,Aradippou,Koukoulas,Κουκουλάς (ή Τσιακκιλερό),1km west of the village,T,T,,H-R,H-R,1976
-281,LAR008,8,33.60688218,34.95199704,CS 1434,Aradippou,Kameni mantra,Καμένη Μάντρα,,Ts,Ts,CC,H,CC-H,1965
-282,LAR009,340,33.52582031,35.01993118,T26,Athienou,Malloura,Μαλλούρα,,T,T,,R,R,1992
-283,LAR010,19,33.60181334,34.88749484,CS 2367,Dromolaksia,Vyzakia,Βυζακιά,,N,N,,H-R,H-R,1976
-284,LAR011,13,33.31516606,34.74076105,CS 2567,Kalavassos,Kafkalies,Καφκαλιές (Καφκαλλιά),,N,N,,H,H-Early Christian,1979
-285,LAR012,13,33.31516606,34.74076105,CS 2567/LarnM T4/1178,Kalavassos,Kafkalies,Καφκαλιές (Καφκαλλιά),"1,5 km south-east of Kalavasos",T,T,,H,H I,1983
-286,LAR013,124,33.2862955,34.7868717,LarnM 1289,Kalavassos,Gyrtomilos,Γυρτόμυλος,,T,T,,R,R,1984
-287,LAR014,9,33.27692729,34.75206632,CS 2388,Kalavassos,Plakes,Πλάκες,,N,N,CC,R,CC-R,1976
-288,LAR015,470,33.25681392,35.2928957,CS 784,Keumurji,Doutli Seki,,,N,N,,H,H,1958
-289,LAR016,15,33.48832103,34.90080957,CS 2729,Klavdia,Stazousa,Στάζουσα,,N,N,,R,R,1991
-290,LAR017,342,33.38398777,34.82401831,LarnM T4/1545-1548,Kofinou,,,West of the village,T,T,,H,H,1959
-292,LAR019,11,33.40374986,34.84094108,CS 2558,Kofinou,Kastres,Κάστρες,,N,N,,H-R,H-R,1979
-293,LAR020,12,33.37575833,34.83220472,CS 2561,Kofinou,Achnari,Αχνάρι,,N,N,,R,R,1979
-301,LAR028,440,33.62313486,34.92513441,1946/XI-30/12,Larnaka,,,Agios Ioannis quarter,T,T,,H,H,1946
-302,LAR029,441,33.61562854,34.92468851,LarnM 1464,Larnaka,,,East of the Greek cemetery,T,T,,R,R,1955
-303,LAR030,442,33.61025744,34.92358988,LarnM 1472,Larnaka,,,East of Agios Georgios Kontos,T,T,,H,H,1955
-304,LAR031,442,33.61025744,34.92358988,LarnM 1473,Larnaka,,,East of Agios Georgios Kontos,T,T,,H,H,1955
-305,LAR032,442,33.61025744,34.92358988,LarnM 1474,Larnaka,,,East of Agios Georgios Kontos,T,T,,H,H,1955
-306,LAR033,442,33.61025744,34.92358988,LarnM 1500,Larnaka,,,East of Agios Georgios Kontos,T,T,,H,H,1955
-307,LAR034,442,33.61025744,34.92358988,CM 79/48,Larnaka,,,East of Agios Georgios Kontos,T,T,,H,H,1955
-308,LAR035,443,33.6203825,34.92097733,LarnM 1943/X-2/1. CM 42/36/1,Larnaka,,,"Stavrodromi street, Soteros Quarter",T,T,,H,H,1943
-309,LAR036,443,33.6203825,34.92097733,LarnM 1540,Larnaka,,,"Ptochokomeiou (side street), Soteros Quarter",T,T,,H,H,1959
-310,LAR037,443,33.6203825,34.92097733,LarnM 1591,Larnaka,,,Soteros Quarter (A. Theodora and A. Themistocleous streets),T,T,,H,H,1962
-311,LAR038,443,33.6203825,34.92097733,"CS 1650, CM 42/36/3",Larnaka,,,Elenis Paleologinas street,T,T,CC,H,CC and H,1967
-313,LAR040,416,33.62986448,34.910284,CM 140,Larnaka,,,Artemidos avenue,T,T,,H,H,1915
-317,LAR044,416,33.62986448,34.910284,Τ1/1942/I-12/1. CM 42/36/1,Larnaka,Dasos tis Alikis,Δάσος της Αλυκής,,T,T,,H,H,1941
-318,LAR045,416,33.62986448,34.910284,Τ2/1941/XI-2/1. CM 42/36/1,Larnaka,Dasos tis Alikis,Δάσος της Αλυκής,,T,T,,H,H,1941
-319,LAR046,416,33.62986448,34.910284,CS 1773,Larnaka,,,"Artemidos avenue S/Plan XL.64.6.I, plot 489-South necropolis (Alykis forest)",N,N,,H,H,1970
-320,LAR047,461,33.628383,34.915645,CM 42/36/1,Larnaka,,,"S/Plan XL.64.3.III, plot 356 (north of Larnaka stadium)",T,T,,R,R,1942
-321,LAR048,444,33.61698635,34.92577411,,Larnaka,,,Gordiou Desmou street,Ts,Ts (7),,H,H,2003
-322,LAR049,445,33.61717046,34.92826258,Τ9,Larnaka,,,Strategou Timagia street,T,T,,H,H,2003
-323,LAR050,445,33.61717046,34.92826258,Τ10,Larnaka,,,Strategou Timagia street,T,T,,H,H,2003
-324,LAR051,445,33.61717046,34.92826258,Τ11,Larnaka,,,Strategou Timagia street,T,T,,H,H,2003
-325,LAR052,445,33.61717046,34.92826258,Τ13,Larnaka,,,Strategou Timagia street,T,T,,H,H,2003
-326,LAR053,445,33.61717046,34.92826258,Τ16,Larnaka,,,Strategou Timagia street,T,T,,H,H,2003
-328,LAR055,2,33.62345969,34.92828462,CS 722,Larnaka,Perivolia,Περιβόλια,,N,N (?),,H,H,1958
-329,LAR056,417,33.63528268,34.93620514,CS 1404,Larnaka,,,Chrysopolittissa area,T,T,CC,H,C-H,1964
-330,LAR057,445,33.61920203,34.91932946,CS 1623,Larnaka,,,"S/Plan XL.64.2.I, Giannaki Aeroporou street",T,T,,H,H,1966
-331,LAR058,446,33.62758115,34.91610316,CS 1553,Larnaka,,,Louki Z. Pieridi street,T,T,,R,R,1966
-332,LAR059,430,33.59407356,34.85492034,CS 2242/T1,Meneou,Agroktima,Αγρόκτημα,1 km south-west of the village,T,T,,H-R,H-R,1975
-333,LAR060,430,33.59407356,34.85492034,CS 2612,Meneou,Agroktima Meneou,Αγρόκτημα Μενεού,Kamares,T,T,,H-R,H-R,1980
-334,LAR061,4,33.43794695,34.97773252,CS 1508,Mosfiloti,Spilioi,Σπήλιοι,,N,N,CA-CC,H,CA-CC-H,1965
-335,LAR062,20,33.77859444,34.99040247,CS 2594/T4,Ormideia,Ampeli,Αμπέλι,,T,T,,H,H I,1979
-336,LAR063,10,33.64035593,34.97485122,CS 2481,Oroklini,Lakkos tis Elias,Λάκκος της Ελιάς,,N,N,,H-R,H-R,1979
-337,LAR064,3,33.70275864,35.05550707,CS 369,Pergamos,Geneokopetra,Γενεοκόπετρα,,N,N,,H,H,1956
-338,LAR065,418,33.70130045,35.02924242,CS 1436,Pergamos,Kafkalla,Καφκάλλα,,Ts,Ts,,H,H,1962
-340,LAR067,7,33.7183851,35.00443787,CS 1463,Pyla,Ampelia tou Hotzia,Αμπέλια του Χότζια,,N,N,CA-CC,H,CA-CC-H,1961
-341,LAR068,34,33.37396062,34.81642981,CS 2233,Skarinou,Skopelos,Σκόπελος,Opposite the police station,T,T,,H-R,H-R,1975
-342,LAR069,24,33.3099081,34.79398124,CS 2956,Tochni,Laksia tou Chani,Λαξιά του Χανή,,N,N,,H-R,H-R,2004
-343,LAR070,344,33.54754077,34.85935048,LarnM T1/1022,Tersefanou,Kaminia,Καμίνια,,T,T,,H-R,H-R,1978
-344,LAR071,345,33.58817755,35.10235877,CS 1497,Tremetousia,Kafkalla,Καφκάλλα,,N,N,CA-CC,H,CA-CC-H,1965
-345,LAR072,6,33.73122351,35.01922678,1934/I-1,Xylotymbou,,,Yard of a private residence,T,T,,H,3rd c. BC,1934
-346,LAR073,6,33.73122351,35.01922678,CS 1461,Xylotymbou,Ayia Marina,Αγία Μαρίνα,Close to Ayia Marina church,N,N,,H,H,1991
-347,LAR074,6,33.73122351,35.01922678,LarnM 1180,Xylotymbou,,,,T,T,,H,H I (2nd c. BC),1983
-348,LAR075,6,33.73122351,35.01922678,LarnM T12/1816,Xylotymbou,,,,T,T,,H,H,2003
-349,LAR076,343,33.73624738,35.01245588,CS 1399,Xylotymbou,,,Close to the elementary school,T,T,,H,H,1965
-350,LAR077,5,33.73720243,35.02034032,CS 1460,Xylotymbou,Laksia Ayiou Vasileiou,Λαξιά Αγίου Βασιλείου,,N,N,,H,H,1961
-351,LEM001,347,32.89925564,34.81422096,Τ2/LM 1709,Agios Georgios Silikou,Alis,Αλής,"S/Plan XLVII/53, plot 180",T,T,,H-R,H and R,1995
-352,LEM002,347,32.89925564,34.81422096,Τ3/LM 1710,Agios Georgios Silikou,Alis,Αλής,"S/Plan XLVII/53, plot 180",T,T,,H-R,H and R,1995
-353,LEM003,347,32.89925564,34.81422096,Τ4/LM 1711,Agios Georgios Silikou,Alis,Αλής,"S/Plan XLVII/53, plot 180",T,T,,H-R,H and R,1995
-354,LEM004,347,32.89925564,34.81422096,Τ5/LM 1712,Agios Georgios Silikou,Alis,Αλής,"S/Plan XLVII/53, plot 180",T,T,,H-R,H and R,1995
-355,LEM005,347,32.89925564,34.81422096,Τ6/LM 1713,Agios Georgios Silikou,Alis,Αλής,"S/Plan XLVII/53, plot 180",T,T,,H-R,H and R,1995
-356,LEM006,33,33.083702,34.874114,CS 2112,Agios Konstantinos,Miliaris-Vikla,Μηλιάρης-Βίκλα,,N,N,,R,R-Early Christian,1974
-357,LEM007,125,33.03375605,34.89434137,CS 2377,Agios Theodoros (Agrou),,,Center of the village,T,T,,R,R,1976
-358,LEM008,28,32.9323233,35.03291723,CS 1606,Agios Theodoros (Soleas),Kampos,Κάμπος,,N,N,,R,R,1966
-359,LEM009,447,33.14990383,34.71979293,CS 2080,Agios Tychonas,Kampinarka,Καμπινάρκα,,Ts,Ts (2),CC,R,CC-R,1974
-360,LEM010,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ17,Agios Tychonas,,,,T,T,,R,R,1930
-361,LEM011,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ26,Agios Tychonas,,,25m. to the right of the road Nicosia-Limassol,T,T,,H,H,1930
-362,LEM012,419,33.70130045,35.02924242,Τ124/LM 496,Agios Tychonas,,,South-western necropolis of Amathus,T,T,,R,2nd-3rd cent AD,1971
-363,LEM013,419,33.70130045,35.02924242,,Agios Tychonas,,,Western necropolis of Amathus (Lofos/hill E),N,N,,R,R,1972
-364,LEM014,420,33.15362881,34.71461448,Τ393,Agios Tychonas,,,Eastern necropolis of Amathus,T,T,,R,LR,1976
-365,LEM015,419,33.70130045,35.02924242,Τ155/LM 643,Agios Tychonas,,,South-western necropolis of Amathus,T,T,,R,R,1978
-366,LEM016,419,33.70130045,35.02924242,Τ156/LM 644,Agios Tychonas,,,South-western necropolis of Amathus,T,T,,H-R,H I and R,1978
-367,LEM017,419,33.70130045,35.02924242,Τ157/LM 645,Agios Tychonas,,,South-western necropolis of Amathus,T,T,,H-R,H I and R,1978
-368,LEM018,420,33.15362881,34.71461448,Τ169/LM 680,Agios Tychonas,,,South-eastern necropolis of Amathus,T,T,,H-R,H and R,1979
-369,LEM019,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ277,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-370,LEM020,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ280,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-371,LEM021,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ281,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-372,LEM022,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ284,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-373,LEM023,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ317,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-374,LEM024,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ355,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-375,LEM025,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ385,Agios Tychonas,,,South-western and south-eastern necropolis of Amathus,T,T,,H-R,H and R,1981
-376,LEM026,420,33.15362881,34.71461448,T427/1984,Agios Tychonas,,,Eastern necropolis of Amathus,T,T,,H-R,H I-ER II,1984
-377,LEM027,419,33.70130045,35.02924242,T455,Agios Tychonas,,,Western necropolis of Amathus,T,T,,H-R,H and R,1986
-378,LEM028,419,33.70130045,35.02924242,Τ531/LM 1161,Agios Tychonas,,,,T,T,,R,R,1987
-379,LEM029,419,33.70130045,35.02924242,Τ516,Agios Tychonas,,,,T,T,,R,1st - 2nd c. AD),1987
-380,LEM030,419,33.70130045,35.02924242,Τ554,Agios Tychonas,,,,T,T,,H-R,H-R,1989
-381,LEM031,419,33.70130045,35.02924242,Τ562,Agios Tychonas,,,,T,T,,H,H,1989
-382,LEM032,419,33.70130045,35.02924242,Τ581,Agios Tychonas,,,,T,T,,H-R,H-R,1989
-383,LEM033,"419, 420","33.70130044920, 33.15362880790","35.02924242190, 34.71461448290",Τ595-Τ646,Agios Tychonas,,,Eastern and western necropolis of Amathus,Ts,Ts (51),CG,R,CG-R,1991
-384,LEM034,420,33.15362881,34.71461448,ΑΜ Τ641/LM 1451,Agios Tychonas,,,Eastern necropolis of Amathus,T,T,,H-R,H and R,1991
-385,LEM035,420,33.15362881,34.71461448,,Agios Tychonas,,,Eastern necropolis of Amathus,N,N,,H-R,,1992
-386,LEM036,419,33.70130045,35.02924242,Τ656/LM 1537,Agios Tychonas,,,Western necropolis of Amathus,T,T,,H,H,1993
-387,LEM037,419,33.70130045,35.02924242,ΑΜ Τ708/LM 1951,Agios Tychonas,,,Western necropolis of Amathus (south part of Anemos hill),T,T,,R,R (?),2004
-388,LEM038,420,33.15362881,34.71461448,ΑΜ Τ741/LM 2002,Agios Tychonas,,,Eastern necropolis of Amathus,T,T,,R,R (?),2004
-390,LEM040,126,33.01579964,34.91661748,Τ2/LM 2156,Agros,Vrysia-Aloni,ΒρυσιάΑλώνι,,T,T,,R,R,2003
-391,LEM041,126,33.01579964,34.91661748,T3/LM 2156,Agros,Vrysia-Aloni,ΒρυσιάΑλώνι,,T,T,,R,R,2003
-392,LEM042,389,32.95832842,34.56850447,,Akrotiri,,,British military base,Ν,Ν,,H-R,H and R,1950
-393,LEM043,349,32.92367936,34.75978661,Τ3/LM 1065,Alassa,Pano Vouppa,Πάνω Βούππα,,T,T,,H,H I,1984
-394,LEM044,421,32.9359846,34.75387762,Τ4/LM 1232,Alassa,Kampos,Κάμπος,,T,T,,H,H I,1984
-395,LEM045,421,32.9359846,34.75387762,,Alassa,Kampos,Κάμπος,,T,T,,R,LR,1984
-396,LEM046,127,32.97872653,34.78756082,,Apeshia,,,Entrance of the village,N,N,,R,R-LR,1936
-397,LEM047,471,32.97179049,34.78438105,T2/LM 1718,Apeshia,Marathies (Marathkies),Μαραθιές (Μαραθκιές),"Sh/Plan LIII 7, plot 169/1/1 ",T,T,CC,H,CC and H,1995
-399,LEM049,29,32.73521903,34.72290925,CS 1774,Anogira,Apikreni,Απίκρενη,,N,N,,H-R,H-R,1970
-400,LEM050,348,32.76068197,34.84026023,CS 2428,Arsos,Pantaros (Platanos),Πάνταρος (Πλάτανος),,T,T,,R,R,1978
-402,LEM052,128,32.76749539,34.6930402,Τ3/LM1421,Avdimou,Trapezomata,ΤραπεζώματαΤραπεζόμαντρα,S/Plan 49/16,Τ,Τ,,H-R,H-ER,1992
-403,LEM053,44,32.77433268,34.66499016,CS 2766,Avdimou,Mantri (Mantres),Μαντρί (Μάντρες),"Sh./Plan LII/62, plot 25",N,N,,R,R,1994
-404,LEM054,41,32.76161982,34.68922075,CS 2629,Avdimou,Psararis,Ψαράρης,In the village,T,T,,H,H,1981
-405,LEM055,40,33.02096895,34.78965156,CS 2627,Apsiou,Gerampelouthkia,Γεραμπελούθκια,,N,N,,R,LR,1981
-406,LEM056,39,33.12525911,34.82168777,CS 2624,Dierona,Kampos,Κάμπος,"Sh.XLVIII, plot 135",N,N,,R,LR,1980
-408,LEM058,390,32.89065447,34.66439692,T11,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-409,LEM059,390,32.89065447,34.66439692,T14,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-410,LEM060,390,32.89065447,34.66439692,T15,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-411,LEM061,390,32.89065447,34.66439692,T16,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-412,LEM062,390,32.89065447,34.66439692,T17,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-413,LEM063,390,32.89065447,34.66439692,T18,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-414,LEM064,390,32.89065447,34.66439692,T19,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-415,LEM065,390,32.89065447,34.66439692,T59,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-416,LEM066,390,32.89065447,34.66439692,T60,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-417,LEM067,390,32.89065447,34.66439692,T61,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-418,LEM068,390,32.89065447,34.66439692,T62,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-419,LEM069,390,32.89065447,34.66439692,T63,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-420,LEM070,390,32.89065447,34.66439692,T64,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-421,LEM071,390,32.89065447,34.66439692,T65,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-422,LEM072,390,32.89065447,34.66439692,T66,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-423,LEM073,390,32.89065447,34.66439692,T67,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-424,LEM074,390,32.89065447,34.66439692,T68,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-425,LEM075,390,32.89065447,34.66439692,T69,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-426,LEM076,390,32.89065447,34.66439692,T70,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-427,LEM077,390,32.89065447,34.66439692,T72,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-428,LEM078,390,32.89065447,34.66439692,T76,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-429,LEM079,390,32.89065447,34.66439692,T77,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-430,LEM080,390,32.89065447,34.66439692,T110,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-431,LEM081,390,32.89065447,34.66439692,T111,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-432,LEM082,390,32.89065447,34.66439692,T112,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-433,LEM083,390,32.89065447,34.66439692,T113,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-434,LEM084,390,32.89065447,34.66439692,T114,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-435,LEM085,390,32.89065447,34.66439692,T115,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-436,LEM086,390,32.89065447,34.66439692,T116,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-437,LEM087,390,32.89065447,34.66439692,T117,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-438,LEM088,390,32.89065447,34.66439692,T118,Episkopi,,,East and south-east of Kourion acropolis,Τ,Τ,,H-R,H and R,1885
-439,LEM089,390,32.89065447,34.66439692,T11/Curium House 48,Episkopi,,,,T,T,,H-R,H-R,1965
-440,LEM090,390,32.89065447,34.66439692,T12/Curium Museum 213,Episkopi,,,North-west boundaries of the village,T,T,,H,H in use until 2nd cent AD,1972
-441,LEM091,390,32.89065447,34.66439692,Τ1,Episkopi,Ayios Ermoyenis,,,T,T,CC,H-R,4th cent BC-2nd c. AD,1946
-442,LEM092,390,32.89065447,34.66439692,Τ5,Episkopi,Ayios Ermoyenis,,,T,T,CC,H-R,4th cent BC-2nd c. AD,1946
-443,LEM093,390,32.89065447,34.66439692,Τ6,Episkopi,Ayios Ermoyenis,,,T,T,CC,H-R,4th cent BC-2nd c. AD,1946
-444,LEM094,390,32.89065447,34.66439692,Τ7,Episkopi,Ayios Ermoyenis,,,T,T,CC,H-R,4th cent BC-2nd c. AD,1946
-445,LEM095,390,32.89065447,34.66439692,Τ7α,Episkopi,Ayios Ermoyenis,,,T,T,CC,H-R,4th cent BC-2nd c. AD,1946
-446,LEM096,390,32.89065447,34.66439692,T8,Episkopi,Ayios Ermoyenis,,,T,T,,H-R,250 BC-100 AD,1946
-447,LEM097,390,32.89065447,34.66439692,Τ9,Episkopi,Ayios Ermoyenis,,,T,T,,H-R,,1946
-448,LEM098,390,32.89065447,34.66439692,,Episkopi,,,"East of the house of Eustolius, Kourion acropolis",T,T,,H,H,1978
-449,LEM099,390,32.89065447,34.66439692,,Episkopi,,,South-east and south-west of Kourion acropolis,Ts,Ts (3),,H,H,1976
-450,LEM100,390,32.89065447,34.66439692,T6,Episkopi,,,,T,T,,H,H I,1978
-451,LEM101,390,32.89065447,34.66439692,,Episkopi,,,South of Kourion acropolis,N,N,,R,R,1988
-452,LEM102,131,33.07795913,34.7167687,Τ17/LM 1836,Germasoyeia,Paniotis,Πανιώτης,,Τ,Τ,,R,LR,2000
-453,LEM103,132,32.91342917,34.69217257,T13,Kantou,Anatolia,Ανατολία,,T,T,,H-R,H-R,1986
-454,LEM104,133,32.90624783,34.71041876,T15,Kantou,Kokkinospilios,Κοκκινόσπηλιος,,T,T,,R,R,1987
-455,LEM105,133,32.90624783,34.71041876,T17,Kantou,Kokkinospilios,Κοκκινόσπηλιος,,T,T,,R,R,1987
-456,LEM106,37,32.99050669,34.94490654,CS 1821,Khandria,Domes,Δόμες,,T,T,,R,R,1971
-457,LEM107,37,32.99050669,34.94490654,CS 2596,Khandria,Domes,Δόμες,,T,T,,H,H,1979
-458,LEM108,134,32.92033802,34.67596598,LM 453,Kolossi,Pampoula,Παμπούλα,,T,T,,H,H I,1968
-459,LEM109,25,32.94197389,34.66946631,CS 2966,Kolossi,Kafkalla,Καφκάλλα,,N,N,,R,R,2004
-460,LEM110,135,32.96472198,34.79527794,Τ1/LM 1838,Korphi,,,,T,T,,R,R,1998
-462,LEM112,136,32.97123243,34.9424148,Τ4/LM 1923,Kyperounta,Panayia,Παναγία,"S/Plan ΧΧΧVΙΙ/47, plot 990",T,T,,R,3rd-4th c. AD,2000
-463,LEM113,350,32.97327067,34.93911878,CS 1632,Kyperounta,,,In the village,T,T,,R,LR,1967
-464,LEM114,392,33.06623589,34.69031315,Κ.M. 4822,Lemesos,,,Commissioner's house,T,T,,R,R,1883
-494,LEM144,346,33.00839546,34.69992882,CS 2628,Lemesos,Vouppia,Βουππιά,,N,N,CA,R,CA-R,1981
-495,LEM145,30,32.93885746,34.78226522,CS 1786,Limnatis,Mia Kremmos,Μία Κρεμμός,,N,N,CA,R,CA-R,1970
-496,LEM146,35,32.91590512,34.80646332,CS 2101/T1,Monagri,Amaksimata,Αμαξίματα,,T,T,,H-R,End of H-beginning of R,1974
-497,LEM147,35,32.91590512,34.80646332,CS 2433,Monagri,Maksimata (Maximon),Μαξίματα,,N,N,,R,R,1978
-498,LEM148,26,32.90529588,34.78788869,CS 2972,Monagri,Petaliotis Mia,Πεταλιώτης Μια,,N,N,,R,R,2004
-500,LEM150,42,32.90978566,34.86183005,CS 2632,Moniatis,Saittas(Kattes),Σαϊττάς (Κάττες),XLVII 27,Ν,Ν,,R,R,1981
-501,LEM151,137,32.98879443,34.7386499,Τ1/LM 2255,Palodhia,,,Rivate School “Heritage”,T,T,,H-R,H-R,2004
-502,LEM152,138,32.98225263,34.73733931,Τ2,Palodhia,"Between localities Laksia tou Makronou (N), Kserokoiladia (S), Kountouros (E)","Between localities Λαξιά του Μακρόνου (N), Ξεροκοιλάδια (S), Κούντουρος (E)","Sh/Plan, plot LIII/32-527 ",T,T,,R,R,2005
-503,LEM153,43,32.97944951,34.75972411,CS 2697,Paramytha,Kolympoi,Κόλυμποι,,N,N,EBA/MBA,H,EBA/MBA-H,1989
-504,LEM154,22,33.14797012,34.78108695,CS 1452,Parekklisia (Kellaki),Laksia tis Arkosytzias,Λαξιά της Αρκοσυτζιάς,,N,N,,H,H,1962
-505,LEM155,145,33.026889,34.761529,,Phasoula,Agios Riginos,Άγιος Ρηγίνος,6 miles to the north of Limassol,N,N,,R,R (Early Christian),1964
-509,LEM159,32,32.81400051,34.87038474,CS 2048,"Platres, Kato",Syrkatis,Συρκάτης,,N,N,,R,R,1973
-510,LEM160,38,32.82001937,34.87552114,CS 2610,"Platres, Kato",Arkatzin tou Vathkia,Αρκάτζιην του Βαθκιά,,T,T,,R,R,1980
-512,LEM162,139,33.01240653,34.69183715,LM 254,Polemidia,Skasmata,Σκάσματα,,T,T,CC,H,CC II-H I,1960
-513,LEM163,139,33.01240653,34.69183715,Τ23/LM 2245,Polemidia,Skasmata,Σκάσματα,,T,T,,H,H,2007
-524,LEM174,36,33.00357,34.69705269,CS 2459,Polemidia (Kato),Tzilalaoura,Τζιλαλάουρα,,T,T,,R,R,1978
-525,LEM175,36,33.00357,34.69705269,CS 2460,Polemidia (Kato),Tzilalaoura,Τζιλαλάουρα,,T,T,,R,R,1978
-526,LEM176,140,32.806667,34.823889,Τ1/LM 2108,Potamiou,,,,Ts,Ts(5),,R,R,2003
-527,LEM177,45,32.78384936,34.72761185,CS 2779,Prasteio,Kato Trimithoudin,Κάτω Τριμιθούδι,Sh/Plan LII/4,N,N,,R,R,1995
-528,LEM178,141,33.00854146,34.76313816,,Spitali,,,,N,N,,R,R,1926
-529,LEM179,352,32.88971487,34.83195196,CS 2029,Sylikou,,,Yard of the elementary school,T,T,,R,R,1973
-530,LEM180,31,33.10823299,34.87996066,CS 1809,Sykopetra,Kolympia,Κολύμπια,,T,T,,R,R,1971
-531,LEM181,27,32.89812201,34.83917319,CS 2973,Sylikou,Laona,Λαόνα,Northeast of the village,N,N,,R,R,2004
-532,LEM182,448,32.95860076,34.65894185,CS 2644,Trahoni,Merras,Μερράς,,Ts,Ts,,R,LR,1982
-534,LEM184,129,32.79062089,34.82960549,"LM 227, 236",Vasa,Gouppi,Γούππι,,T,T,,R,R,1959
-535,LEM185,130,32.79332503,34.83103032,,Vasa,Kampi,Καμπί,,T,T,,R,in use until the 4th c. AD,1938
-536,LEM186,144,32.9434864,34.69249602,Τ13/LM 1180,Ypsonas,Choliasmeni,Χολιασμένη,,T,T,,H,H,1987
-538,LEM188,142,32.95269835,34.69225936,Τ26/LM 1717,Ypsonas,Skotomenos,Σκοτωμένος,,T,T,,H,H,1995
-539,LEM189,143,32.9675977,34.68882255,Τ28/LM 1915,Ypsonas,Kladeri,Κλαδερή,,T,T,,H-R,H-R,2000
-540,LEM190,143,32.9675977,34.68882255,Τ29/LM 1916,Ypsonas,Kladeri,Κλαδερή,,T,T,,H,H,2000
-541,LEF001,354,33.57941047,35.1075339,CS 1063,Agyia,Tashlik Yaka,,,N,N (?),CA,H,CA-H,1959
-543,LEF003,355,33.11370469,35.24776625,CS 284,Agia Marina (Skillouras),Kokkinoyia,Κοκκινόγια,,N,N,,R,R,1955
-544,LEF004,108,32.870418,35.0749567,CS 2649,Agios Epifaneios (Soleas),Gerontas,Γέροντας,,N,N,MBA,R,MBA-LR,1982
-545,LEF005,146,32.64123025,35.18958072,,Agios Theodoros/Mansoura,Spilios tou Listi,Σπήλιος του Ληστή,,N,N,,H-R,H-R,2009
-546,LEF006,146,32.64123025,35.18958072,Μανσούρα Τ1,Agios Theodoros/Mansoura,Spilios tou Listi,Σπήλιος του Ληστή,"Sh/Plan 18/35, plot 836 ",T,T,,H-R,3rd c. BC-3rd c. AD,2005
-547,LEF007,462,33.0575181,35.04982425,,Agia Marina (Xyliatou),,,,T,T,,H-R,H-R,U
-548,LEF008,58,33.04665556,35.05291445,CS 1344,Agia Marina (Xyliatou),Tholos,Θόλος,,Τ,Τ,,R,R,1962
-550,LEF010,72,33.16933644,35.08127081,CS 2261,Agios Ioannis (Malountas),Pallouroudin,Παλλουρούδιν,,N,N,,H-R,H-R,1975
-551,LEF011,71,33.18108387,35.08139933,CS 2264,Agios Ioannis (Malountas),Moutti tou melissiou,Μούττη του μελισσιού,,N,N,,R,R,1975
-552,LEF012,55,33.43610839,35.06225464,CS 457,Agios Sozomenos,Vamos,Βάμος,,N,N,,H-R,H-R,1957
-553,LEF013,56,33.45519575,35.0914469,CS 669,Agios Sozomenos,Halasmata,Χαλάσματα,,N,N,,H,H,1957
-554,LEF014,56,33.45519575,35.0914469,CS 670,Agios Sozomenos,Halasmata,Χαλάσματα,,N,N,,H,H,1957
-555,LEF015,56,33.45519575,35.0914469,CS 699,Agios Sozomenos,Halasmata,Χαλάσματα,,N,N,,H-R,H-R,1957
-556,LEF016,57,33.44867752,35.07811841,CS 701,Agios Sozomenos,Choupan Tèpe,,,N,N,,H-R,H-R,1957
-557,LEF017,109,33.14465534,35.15328526,CS 2681,Akaki,Halopetra,Χαλόπετρα,,N,N,,H-R,H-R,1987
-558,LEF018,356,32.8160968,35.13543356,CS 1670/T19,Ambelikou,Toumpalin tou Mavrou,Τουμπάλιν του Μαύρου,,T,T,,H,H,1967
-559,LEF019,147,33.25638074,35.0726915,1963/I-15/1,Anagia,Vounous,Βούνους,,T,T,,R,R,1963
-560,LEF020,148,33.29019677,35.00693683,,Analiontas,,,,N,N,,R,R,1926
-561,LEF021,393,33.03811526,35.18299051,CS 211,Argaki,Mantra Halouta,Μάντρα του Χαλούτα,,N,N,,H-R,H-R,1955
-562,LEF022,110,33.18666303,35.04930532,CS 2706,Arediou,Kokkini,Κόκκινη,,N,N,CC,H,CC-H,1990
-563,LEF023,110,33.18666303,35.04930532,CS 2813,Arediou,Kokkini,Κόκκινη,Sh/Plan ΧΧΙΧ/56,N,N,CC,H,CC-H,1995
-564,LEF024,47,33.04532753,35.13931479,CS 2372,Astromeritis,Potamoi (Trimmatos),Ποταμοί (Τρίμματος),,N,N,,H-R,H-R,1976
-565,LEF025,47,33.04532753,35.13931479,CS 2715,Astromeritis,Potamos (Trimmatos),Ποταμός (Τρίμματος),Astromeritis street,N,N,CC,H,CC-H,1990
-566,LEF026,378,33.01497976,35.20968788,CS 931,Khrysiliou,Ayios Sergis,Άγιος Σέργης,,N,N,,H,H,1958
-567,LEF027,378,33.01497976,35.20968788,CS 932,Khrysiliou,Ayios Sergis,Άγιος Σέργης,,N,N(?),,R,R,1958
-568,LEF028,463,33.41353705,35.01847738,T1,Dali,,,North of the road from Pera Chorio,T,T,,H,H,1927
-569,LEF029,463,33.41353705,35.01847738,T2,Dali,,,,T,T,,H-R,H II-R,1927
-570,LEF030,150,33.42022996,35.02072603,T3/1963/X-11/1,Dali,Eliouthkia tou Kouzourtou,Ελιούθκια του Κούζουρτου,,T,T,,H,H,1963
-571,LEF031,429,33.41364925,35.01356121,T11/CS 1621,Dali,Vrontolaktis,Βροντολάκτης,,T,T,,H-R,in use from early H I to R,1966
-572,LEF032,149,33.41259667,35.02081066,T13(?),Dali,Vasilika,Βασιλικά,,T,T,,R,1st c. BC-5th c. AD,1971
-573,LEF033,48,33.40301397,35.03394372,CS 427,Dali,Kokkines,Κόκκινες,,N,N,,R,R,1957
-574,LEF034,50,33.4057864,35.06239123,CS 2457,Dali,Aetomoutti,Αετόμουττη,,Ts,Ts (2),,R,R,1978
-576,LEF036,112,33.14230471,35.16531816,CS 2851,Deneia,Kafkalla,Καφκάλλα,"Sh/Plan ΧΧ/54, plot 90, 81",Ts,Ts,MBA,R,MBA and R,1997
-577,LEF037,151,32.8905066,35.04981219,T4/1983/XI-29/1,Evrichou,Phoinikas,Φοίνικας,"Sh/Plan ΧΧVIII.44.E.2, plot 604(?)",T,T,,H-R,250 BC-100 AD,1983
-578,LEF038,70,32.91726516,35.06667377,CS 2126,Evrichou,Atsas,Ατσάς,,N,N,CC,H,CC-H,1974
-579,LEF039,64,32.93293033,35.06994348,CS 1446,Evrichou,Pano Atsias (Panatsios),Πάνω Ατσάς (Πάνατσιος),,N,N,,R,R,1964
-580,LEF040,158,32.8895034,35.06516288,CS 1747/Τ1,Flasou,,,Yard of the village's elementary shool,T,T,,R,ER II,1969
-581,LEF041,158,32.8895034,35.06516288,CS 1748/Τ2,Flasou,,,Yard of the village's elementary shool,T,T,,R,R,1969
-583,LEF043,377,33.10638755,35.19784191,CS 1430,Fillia,Agriogadaros (Arkogadaros),Αγριογάδαρος (Αρκογάδαρος),,N,N,,H,H,1961
-586,LEF046,394,32.80886187,35.1372294,CS 1505/T5,Galini,Kournouta,Κουρνούτα,,T,T,,H-R,2nd c. BC-3rd c. AD,1965
-587,LEF047,394,32.80886187,35.1372294,CS 1506/T6,Galini,,,"Ancient Soloi area, S/Plan XIX/57, plot 207",T,T,,H-R,3rd c. BC-3rd c. AD,1965
-588,LEF048,394,32.80886187,35.1372294,1965/II,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,"S/Plan XIX/57, plot 397",T,T,,H,H,1965
-589,LEF049,394,32.80886187,35.1372294,CS 1661/T11,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,Τ,Τ,,H-R,H and R,1967
-590,LEF050,394,32.80886187,35.1372294,CS 1665/T15,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,N,N,,H-R,H and R,1967
-591,LEF051,394,32.80886187,35.1372294,CS 1667/T17,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,N,N,,H-R,H and R,1967
-592,LEF052,394,32.80886187,35.1372294,CS 1668/T18,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,N,N,,H-R,H and R,1967
-593,LEF053,394,32.80886187,35.1372294,CS 1328,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,N,N,,H,H-Early Christian,1963
-594,LEF054,394,32.80886187,35.1372294,CS 1505/T5,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R,1965
-595,LEF055,394,32.80886187,35.1372294,CS 1506/T6,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R,1965
-596,LEF056,394,32.80886187,35.1372294,CS 1634/T8,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R,1967
-597,LEF057,394,32.80886187,35.1372294,CS 1661/T11,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H,H,1967
-598,LEF058,394,32.80886187,35.1372294,CS 1662/T12,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R (?),1967
-599,LEF059,394,32.80886187,35.1372294,CS 1663/T13,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R (?),1967
-600,LEF060,394,32.80886187,35.1372294,CS 1664/T14,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R (?),1967
-601,LEF061,394,32.80886187,35.1372294,CS 1665/T15,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H,H,1967
-602,LEF062,394,32.80886187,35.1372294,CS 1666/T16,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,R,R,1967
-603,LEF063,394,32.80886187,35.1372294,CS 1667/T17,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H,H,1967
-604,LEF064,394,32.80886187,35.1372294,CS 1668/T18,Galini,Ayios Kournoutas,Άγιος Κουρνούτας,,T,T,,H-R,H-R,1967
-605,LEF065,62,33.45817229,35.09821405,CS 674,Geri/Yeri,Khalasmata,Χαλάσματα,,N,N,,H,H,1957
-606,LEF066,62,33.45817229,35.09821405,CS 700,Geri/Yeri,Khalasmata,Χαλάσματα,,N,N,,H,H,1957
-607,LEF067,62,33.45817229,35.09821405,CS 702,Geri/Yeri,Khalasmata,Χαλάσματα,,N,N,,H,EH,1957
-608,LEF068,111,33.40051016,35.10098759,CS 2401,Geri/Yeri,Koutsopetrika,Κουτσοπέτρικα,,N,N,LBA,R,LBA-R,1976
-609,LEF069,121,32.9040317,34.9910805,CS 2809,Kakopetria,,,Ayios Yeoryios street -Sh./Plan XXXVII/21,Ts,Ts,,H,H,1996
-610,LEF070,113,32.81930322,35.03408104,CS 1679,Kalopanayiotis,Dikhoritissa,Διχωρίτισσα,,Ts,Ts,,H,H,1968
-611,LEF071,114,32.78269217,35.07538733,CS 2645/T1,Kampos,Pentakallis (Pendakalles),Πεντακάλλης (Πεντακαλλές),,T,T,,H-R,H-R,1982
-612,LEF072,464,32.81560587,35.14143976,,Karavostasi,,,Eastern necropolis of ancient Soloi,N,N,,H-R,H and R,1969
-613,LEF073,357,32.81133236,35.14184338,CS 1725/T20,Karavostasi,,,,T,T,,H,H,1969
-614,LEF074,398,32.89009358,35.07968782,,Katydata,,,East of the villages of Katydata and Linou,N,N,LBA,H-R,LBA-H and R,1883
-616,LEF076,398,32.89009358,35.07968782,T2,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-617,LEF077,398,32.89009358,35.07968782,T3,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-618,LEF078,398,32.89009358,35.07968782,T4,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-619,LEF079,398,32.89009358,35.07968782,T9,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-620,LEF080,398,32.89009358,35.07968782,T14,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-621,LEF081,398,32.89009358,35.07968782,T30,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-622,LEF082,398,32.89009358,35.07968782,T41,Katydata,,,South of the village towards Linou,T,T,,H-R,H and R,1916
-623,LEF083,66,33.17400004,35.02863406,CS 1513,Klirou,Pervolia kai Diplargaka,Περβόλια και Διπλάργακα,,N,N,,R,R,1965
-624,LEF084,122,33.17718663,35.02330874,CS 2464,Klirou,,,Village  stadium,N,N,,R,R,1978
-625,LEF085,152,33.1780402,35.02261979,CS 2672,Klirou,,,"In the village, by the elementary school",T,T,,R,R,1985
-626,LEF086,358,32.61376669,35.18038332,CS 1415,Kokkina,Kakoskali (Ayia Eleni),Κακοσκαλί (Αγία Ελένη),,Ts,Ts,,H,H,1963
-627,LEF087,359,32.88844482,35.04053812,1963/XI-22,Korakou,Avgolemou,Αυγολέμου,,T,T,,R,Early imperial era,1963
-628,LEF088,431,33.50389884,35.26575337,,Kythrea,Mandra tou Kounia,Μάνδρα του Κουνιά,,T,T,,H-R,H and R,1908
-629,LEF089,431,33.50389884,35.26575337,,Kythrea (Khytroi),,,East of Voni,N,N,,R,LR and B,1883
-630,LEF090,363,33.06207608,35.20299529,T2/Κ.M. 1962/VII-19/2,Kyra,,,Yard of the village's school,T,T,,H-R,Conitnuous use from H I until R II,1962
-631,LEF091,362,33.07508965,35.22554035,CS 153,Kyra,Ayios Yeorgios (Kambin tou Ayiou Yeorgiou),Άγιος Γεώργιος (Καμπίν του Αγίου Γεωργίου),,N,N,CC,H,CC-H,1955
-632,LEF092,360,33.06469513,35.21608824,CS 167,Kyra,Kaminia,Καμίνια,,N,N,,H,H,1955
-633,LEF093,361,33.03953987,35.21607387,CS 186,Kyra,Kounouppa (Kournouppes),Κουνούππα (Κουρνούππες),,N,N,,H,H,1955
-634,LEF094,115,33.34444256,35.09387477,CS 2630,Lakatameia (Kato),Kafkalla tis Mantras (tou kara Dimitri),Καφκάλλα της Μάντρας (του Καρά Δημήτρη),Sh. XXXI4E1,N,N,,R,R,1981
-635,LEF095,364,32.84787313,35.11054784,,Lefka,Haїt-lik,Haїtlik,,T,T,,H-R,H-R,1916
-636,LEF096,120,33.43232513,35.18429739,CS 1712/T6,Lefkosia,,,4 km east of Kaimakli,T,T,,H-R,End of H-beginning of R,1968
-637,LEF097,467,33.37205218,35.18823123,CS 1712/T6,Kaimakli,Agios Dimitrianos,Άγιος Δημητριανός,,T,T,,H,H,1968
-638,LEF098,427,33.37081257,35.15652793,CS 1483/T16,Lefkosia,Agia Paraskevi,Αγία Παρασκευή,Ayia Paraskevi quarter/Arch. Makarios III street (near Th. Dervi house),T,T,,H-R,End of H II with use until the R I,1965
-639,LEF099,427,33.37081257,35.15652793,CS 2106/T18,Lefkosia,Agia Paraskevi,Αγία Παρασκευή,,T,T,,R,R,1974
-640,LEF100,353,33.3482423,35.15625935,,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,Agioi Omologhites,T,T,,H,H,1934
-641,LEF101,353,33.3482423,35.15625935,,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,Agioi Omologhites,Ts,Ts (unspecified number),,H-R,H with R reuse,1950
-642,LEF102,353,33.3482423,35.15625935,T25/1984/IX,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,Agioi Omologhites,T,T,,H,H I in use for one and a half centuries at least,1984
-643,LEF103,353,33.3482423,35.15625935,,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,Agioi Omologhites,T,T,,H-R,H and R,2001
-644,LEF104,353,33.3482423,35.15625935,CS 1393/T10,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,,T,T,,H-R,H-R,1964
-645,LEF105,353,33.3482423,35.15625935,CS 1393/T11,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,,T,T,,H-R,H-R,1964
-646,LEF106,353,33.3482423,35.15625935,CS 1393/T12,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,,T,T,,H-R,H-R,1964
-647,LEF107,353,33.3482423,35.15625935,CS 1768/T13,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,,T,T,,H-R,H-R,1969
-648,LEF108,353,33.3482423,35.15625935,CS 1769/T14,Lefkosia,Agioi Omologhites,Αγίοι Ομολογητές,,T,T,,H-R,H-R,1970
-653,LEF113,428,33.35179182,35.17448436,CS 2946,Lefkosia,,,Construction site for new Nicosia District Court buildings,T,T,,R,R,2003
-654,LEF114,472,33.4034974,35.14602569,CS 1496,Lefkosia,,,Government Mansion of Athalassa,T,T,,H,H,1965
-655,LEF115,365,33.46498785,35.0246796,CS 391,Louroutzina,Kokkinokremmos (Kokkinokafkalla),Κοκκινόκρεμμος (Κοκκινοκαφκάλλα),,N,N,,H,H,1956
-656,LEF116,153,33.29711057,34.95152081,CS 2475,Lythrodontas,,,In the village,N,N,,R,R,1978
-657,LEF117,65,33.34643659,34.9786401,CS 1544,Mathiatis,Kokkinantonis,Κοκκιναντώνης,,T,T,CC,H,CC-H,1965
-658,LEF118,67,33.34461811,34.97721412,CS 1608,Mathiatis,Kokkines,Κόκκινες,,N,N,,R,LR,1966
-659,LEF119,119,32.63918582,35.18952267,CS 1349,Mansoura,Ayios Theodoros,Άγιος Θεόδωρος,,N,N,,R,R,1963
-660,LEF120,366,33.32738997,35.02310856,CS 404,Margi,Ayia Thekli,Αγία Θέκλη,,N,N,,H,H,1956
-661,LEF121,68,33.15903853,35.10546342,CS 2093,Menoiko,Elies,Ελιές,,N,N,,R,LR,1966
-662,LEF122,367,33.12738259,35.04175402,CS 2866,Mitsero,,,,T,T,,H,H,1998
-664,LEF124,371,33.00065595,35.22310083,CS 108,Morfou,Toumpa tou Skourou (?),Τούμπα του Σκούρου (?),,N,N,,R,R,1955
-665,LEF125,369,32.99698583,35.24762728,CS 220,Morfou,Σπήλιοι,,,N,N,EBA,H,EBA and H,1955
-666,LEF126,368,32.99562122,35.2513209,CS 1366,Morfou,Ambelia,Αμπέλια,River Aggoulos,N,N,,H,H,1962
-667,LEF127,368,32.99562122,35.2513209,CS 270,Morfou,Ambelia,Αμπέλια,,N,N,CC,H,CC-H,1955
-668,LEF128,372,32.99507971,35.21053132,CS 268,Morfou,Ambelia (Kallinikos),Αμπέλια (Καλλίνικος),,N,N,CG,H,CG and H,1955
-669,LEF129,370,33.03246569,35.21774439,CS 355,Morfou,Iatrou,Ιατρού,Khrysiliou borders,N,N,,H,H,1955
-670,LEF130,154,33.00445388,35.08567344,CS 2762,Nikitari,Mylos tou Rousou,Μύλος του Ρούσου,,T,T,,R,R,1994
-671,LEF131,51,33.38474228,35.02778847,CS 432,Nisou,Maria Moutti,Μαρία Μούττη,,N,N,,R,R,1957
-672,LEF132,155,33.39184852,35.02969234,,Nisou,,,Ayios Eftykhios chapel,T,T,,H,H (?),1926
-673,LEF133,373,33.09700332,35.10272127,CS 1685,Orounta,Kserolakkos,Ξερόλακκος,,T,T,,R,R,1968
-674,LEF134,373,33.09700332,35.10272127,CS 2081/T2,Orounta,Kserolakkos,Ξερόλακκος,,T,T,,R,R,1970
-675,LEF135,374,32.88324149,35.14756288,,Pentayia,Myloi,Μύλοι,,N,N,,R,R,1960
-676,LEF136,374,32.88324149,35.14756288,CS 1402,Pentayia,Myloi-Chalasmata,Μύλοι-Χαλάσματα,,T,T,,H,H,1965
-677,LEF137,375,33.08192952,35.12753919,CS 2439/Τ1,Peristerona,Aspoyeia,Ασπρόγεια,,T,T,,R,R,1978
-678,LEF138,376,32.86216827,35.13524471,CS 161,Peristeronari,,,,N,N,CG,R,CG-R,1955
-679,LEF139,118,32.6578834,35.16515949,CS 1512,Pigenia,Spiladia,Σπηλάδια,,T,T,,H,H I,1965
-681,LEF141,156,33.25818317,35.02332701,CS 1499/T.7,Politiko,,,"In the village  (Sh./Pl. ΧΧΧ/58, plot no 411)",T,T,,R,R I in use until the 4th c. AD,1965
-682,LEF142,156,33.25818317,35.02332701,CS 1778/T12,Politiko,,,"In the village (Sh./Pl. ΧΧΧ/58, plot no 411)",T,T,,R,R,1970
-683,LEF143,156,33.25818317,35.02332701,CS 2828,Politiko,,,"Sh./Pl. ΧΧΧ/58, plot no 411",T,T,,R,ER,1996
-684,LEF144,69,33.23467062,35.02992688,CS 2115,Politiko,Ayios Mnason,Άγιος Μνάσων,,N,N,LBA,H,LBA-H,1974
-685,LEF145,54,33.43124954,35.04548917,CS 445,Potamia,Fourkismenos,Φουρκισμένος,Dali borders,N,N,,R,R,1957
-686,LEF146,53,33.44775244,35.0548443,CS 448,Potamia,Ambelin,Αμπέλιν,,N,N,,H,H,1957
-687,LEF147,52,33.45839068,35.06517867,CS 677,Potamia,Diplopotamon,Διπλοπόταμον,,N,N,CA,H-R,CA-H-R,1957
-688,LEF148,116,32.67300322,35.1689892,CS 1807/T9,Pyrgos (Kato),Solomos,Σολωμός,,T,T,,R,R,1971
-689,LEF149,59,33.47569182,35.06761867,CS 474,Pyroi,Kastros,Κάστρος,,N,N,,H,H,1957
-690,LEF150,60,33.47337978,35.0777002,CS 685,Pyroi,Ayios Yeoryios,Άγιος Γεώργιος,,N,N,,H-R,H-R,1957
-691,LEF151,60,33.47337978,35.0777002,CS 691,Pyroi,Ayios Yeoryios,Άγιος Γεώργιος,,N,N,CA,H,CA-H,1957
-692,LEF152,61,33.46346552,35.09795694,CS 704,Pyroi,Chalasmata,Χαλάσματα,,N,N,,H,H,1957
-694,LEF154,63,33.37125538,34.95919676,CS 1368,Shia,Anoyia,Ανώγια,,T,T,,R,R,1963
-695,LEF155,157,32.89070055,35.09159118,T2,Skouriotissa,Apoti,Άποτη,,T,T,,R,R,1916
-696,PAF001,73,32.51705994,34.75302554,CS2328,Agia Varvara,Asproyes,Ασπρογιές,,N,N,,H,H,1979
-697,PAF002,73,32.51705994,34.75302554,CS 2328,Agia Varvara,Asproyes,Ασπρογιές,,N,N,CG,R,CG-R,1976
-698,PAF003,75,32.51923516,34.7520952,CS 2329,Agia Varvara,Kaminia,Καμίνια,,N,N,CA,R,CA-R,1976
-699,PAF004,76,32.51503914,34.74905325,CS 2331,Agia Varvara,Melisies,Μελισιές,,N,N,,H-R,H-R,1976
-700,PAF005,74,32.50704194,34.76335081,CS 2332,Agia Varvara,Neon Chorio,Νέον Χωριόν,,N,N,,R,R,1976
-702,PAF007,77,32.47481281,34.75427003,CS 2327,Agia Marinouda,Kafkalla,Καυκάλλα,,N,N,,H-R,H-R,1976
-703,PAF008,379,32.55033601,34.9068008,,Agios Dimitrianos,,,,N,N,,R,R,1926
-705,PAF010,160,32.61149575,34.87511277,CS 1686/T1,Agios Fotios,,,In the village,T,T,,R,R,1968
-706,PAF011,1,32.63562302,34.76778006,CS 625,Agios Georgios,Loutron,Λουτρόν,,N,N,,R,R,1957
-707,PAF012,81,32.47116554,34.72099908,CS 2347,Acheleia,Ayios Leontios,Άγιος Λεόντιος,,N,N,,H-R,H-R,1976
-709,PAF014,473,32.29227728,35.04873513,,Akamas,Ayios Konon,Άγιος Κόνων,,N,N,,H-R,H-R,1989
-710,PAF015,78,32.55124842,34.72914911,CS 2337,Anarita,Kafkarouda,Καυκαρούδα,,N,N,,R,R,1976
-711,PAF016,79,32.52549675,34.73274279,CS 2338,Anarita,Monokokkalos,Μονοκόκκαλος,,N,N,,H-R,H-R,1976
-712,PAF017,159,32.44463648,34.78520597,,Anavargos,Ellinospilioi/Alinospilios,Ελληνόσπηλιοι/Αληνόσπηλιοι,,T,T (part of visible necropolis),,H,H,1926
-713,PAF018,159,32.44463648,34.78520597,PM 2767,Anavargos,Ellinospilioi/Alinospilios,Ελληνόσπηλιοι/Αληνόσπηλιοι,,T,T,,R,R,1985
-716,PAF021,159,32.44463648,34.78520597,PM 3628,Anavargos,Ellinospilioi,Ελληνόσπηλιοι,,T,T,,H-R,H and R,2004
-717,PAF022,161,32.67524452,34.74827217,,Archimandrita (Pano),,,In the village (near to Agios Theodosios church),T,T,,R,R,1926
-719,PAF024,162,32.66561259,34.74122784,,Archimandrita,Mantres,Μάντρες,,Ts,Ts (7),,H-R,H-R,1984
-720,PAF025,162,32.66561259,34.74122784,T103/K.M. 356,Archimandrita,Mantres,Μάντρες,,T,T,,H-R,H-R,1984
-721,PAF026,162,32.66561259,34.74122784,T94/K.M. 346,Archimandrita,Mantres,Μάντρες,,T,T,,H-R,H-R,1984
-722,PAF027,162,32.66561259,34.74122784,T3/K.M. 345,Archimandrita,Mantres,Μάντρες,,T,T,,H-R,H-R,1984
-723,PAF028,163,32.66845747,34.74346463,M.Κ. 124,Archimandrita (Kato),Sklinitzia,Σκλινίτζια,,T,T,,R,R,1963
-724,PAF029,380,32.40533274,34.93877157,,Arodhes,,,,N,N,,R,R,U
-725,PAF030,80,32.54443077,34.79823776,CS 2358,Axylou (Episkopi),Moutti tou Ayio Epfaneiou,Μούττη του Αγίου Επιφανείου,,N,N,,R,R,1976
-726,PAF031,385,32.40089022,34.792547,CS 2274,Chloraka,Morozoes/Ellinospilioi,Μωρόζωες,"Sheet XLV plan 58, plot no. 256/1",N,N,,H,H,1976
-727,PAF032,106,32.4015505,34.80340064,CS 2287,Chloraka,Vrisouthkia,Βρυσούδια,"Sheet XLV plan 50, plot no. 356",N,N,,H,H I,1976
-728,PAF033,107,32.4174692,34.79056045,CS 2277,Chloraka,Kinodries,Κινόδριες,"Sheet XLV plan 58, plot no. 306/13",N,N,,H-R,H-R,1976
-730,PAF035,386,32.40858398,34.80127337,CS 2275,Chloraka,,,In the village,N,N,,H,H,1976
-731,PAF036,105,32.4057525,34.79388307,CS 2276,Chloraka,Kampos,Κάμπος,,N,N,CG,H-R,CG-R,1976
-732,PAF037,387,32.44542934,34.97949192,PM 2919 Τ107/86,Choli,,,,T,T,,H,H,1986
-733,PAF038,104,32.44265092,35.01033225,CS 1984,Chrysochou,Kokkinoyia,Κοκκινόγια,,N,N,CA,H-R,CA-R,1972
-734,PAF039,103,32.43930574,35.00909262,CS 1989,Chrysochou,Alonia,Αλώνια,,N,N,EBA,H-R,EBA and R,1972
-741,PAF046,450,32.42451764,34.79918777,,Emba,Petridia,Πετρίδια,Within the church of Ayios Yeorgios,Τ,Τ,,H-R,H(?)-R,2007
-742,PAF047,422,32.43342585,34.80473281,CS 2319,Emba,Aspra Chomata,Άσπρα Χώματα,,N,N,CG,H-R,CG-R,1976
-743,PAF048,423,32.42532368,34.79628604,CS 2324,Emba,Limnarka,Λιμνάρκα,,N,N,,R,R,1976
-744,PAF049,164,32.42408195,34.80288525,CS 2325,Emba,,,In the village,N,N,,H,H,1976
-745,PAF050,449,32.43062138,34.80751073,CS 2326,Emba,Throumperes,Θρουμπερές,,N,N,CG,H-R,CG-H,1976
-746,PAF051,82,32.52084887,34.79065017,CS 2343,Episkopi,Teratsia tou Kosta,Τερατσιά του Κώστα,,N,N,,H-R,H-R,1976
-747,PAF052,384,32.62959949,34.74495393,,Fasoula,Melanouthkia,Μελανούδια,,Ts,Ts (2),,H (?),H (?),1991
-748,PAF053,102,32.56726688,34.73662539,CS 2346,Foinikas,Vasilina,Βασιλίνα,,N,N,,R,R,1976
-749,PAF054,166,32.45170867,34.76067279,PM 2069,Geroskipou,,,Elementary school yard,T,T,CC,H-R,CC-H,1973
-750,PAF055,166,32.45170867,34.76067279,PM 2481,Geroskipou,,,Arch. Makarios C avenue,T,T,,H-R,H and R,1982
-751,PAF056,168,32.45664331,34.76896071,PM 3070,Geroskipou,Laxia,Λαξιά,,T,T,,H-R,H-R,1989
-752,PAF057,168,32.45664331,34.76896071,PM 3235 / T11,Geroskipou,Laxia,Λαξιά,,T,T,,H,H,1994
-753,PAF058,168,32.45664331,34.76896071,PM 3348 Τ13/97,Geroskipou,Laxia,Λαξιά,,T,T,,H-R,H-R,1997
-754,PAF059,170,32.42629079,34.75981452,,Geroskipou (Paphos),Ellinika,Ελληνικά,,N,N,,H,H,1887
-755,PAF060,167,32.43299552,34.75446229,,Geroskipou,Katarameni,Καταραμένη,,N,N,,R,R,U
-757,PAF062,381,32.42585399,34.91549783,PM 1752,Kathikas,Shiromas,Σιηρόμας,,T,T,,H,H I,1966
-758,PAF063,171,32.50126139,34.84522413,,Kallepeia,,,,N,N,,R,R,U
-759,PAF064,172,32.73630854,34.83662543,,Kedares,,,,T,T,,R,R (?),1936
-760,PAF065,173,32.40199001,34.82193066,PM 2768,Kissonerga,,,,T,T,,R,R,1985
-761,PAF066,174,32.57870882,34.70562371,,Kouklia,Arkalon,Άρκαλον,,T,T,,R,R (?),1887
-762,PAF067,451,32.57019938,34.70672018,,Kouklia,Phones,Φωνές,,T,T,,R,R,1958
-763,PAF068,451,32.57019938,34.70672018,Μ.Κ. 134,Kouklia,Phones,Φωνές,,T,T,,R,R,1967
-764,PAF069,451,32.57019938,34.70672018,Τ115,Kouklia,Phones,Φωνές,,T,T,,H,H II,1987
-765,PAF070,451,32.57019938,34.70672018,Τ116,Kouklia,Phones,Φωνές,,T,T,,H,H II,1987
-766,PAF071,451,32.57019938,34.70672018,Τ165/RRKM 468,Kouklia,Fokes,Φώκες,,T,T,,H,H I,2003
-767,PAF072,175,32.57646279,34.71326939,Τ1/Μ.Κ. 84.,Kouklia,Xylinos,Ξυλινός,,T,T,,H,H,1959
-768,PAF073,177,32.59908331,34.69735527,,Kouklia,Spilaion tou Arapi,Σπήλαιον του Αράπη,,T,T,,R,R,1973
-769,PAF074,176,32.60751577,34.71619739,Τ97/Μ.Κ. 349,Kouklia,Dimmata,Δήμματα,,T,T (3),,H-R,H and R,1984
-770,PAF075,452,32.5723203,34.70506323,Τ111/Μ.Κ. 371,Kouklia,Kato Alonia,Κάτω Αλώνια,,T,T,,H,H,1986
-772,PAF077,179,32.40682973,34.80836389,CS 2290,Lemba,Ayios Stephanos,Άγιος Στέφανος,Village plan plot no. 137,N,N,,H,H,1976
-773,PAF078,180,32.48113685,35.03921934,PM 2007,Limni (Pano),Charkomas,Χαρκομάς,,T,T,,H,H,1970
-774,PAF079,83,32.47993008,35.04352521,CS 1326,Makounta,Karydi,Καρύδι,,N,N,,H,H I,1961
-775,PAF080,46,32.53205826,34.70580821,CS 2864,Mandria,Kambos tou Loutra,Κάμπος και Λουτρά,Sh./Pl. L1/4,N,N,CC,H,CC-H,1997
-776,PAF081,84,32.46232609,34.81274055,CS 2354,Mesa Chorio,Tzelarotsos,Τζελάροτσος,,N,N,,H-R,H-R,1976
-777,PAF082,181,32.45504199,34.81589548,PM 2057,Mesogi,,,,T,T,,H,H,1972
-778,PAF083,181,32.45504199,34.81589548,PM 2058,Mesogi,,,,T,T,,H,H,1972
-779,PAF084,181,32.45504199,34.81589548,PM 2750,Mesogi,,,,T,T,,R,R,1985
-780,PAF085,182,32.52121024,35.13525609,,Nea Dimmata,,,,T,T,,H,H,1968
-781,PAF086,182,32.52121024,35.13525609,PM 3100,Nea Dimmata,,,,T,T,,H-R,H and R,1989
-782,PAF087,182,32.52121024,35.13525609,PM 3069,Nea Dimmata,,,,T,T,,R,R,1989
-783,PAF088,182,32.52121024,35.13525609,PM 3075,Nea Dimmata,,,,T,T,,R,R,1989
-784,PAF089,85,32.38783444,35.03583109,CS 1295,Neo Chorio,Anatoliki,Ανατολική,,N,N,,H,H,1960
-785,PAF090,183,32.33512615,35.030474,CS 2469,Neo Chorio,Pampelon,Πάμπελον,,N,N,,H-R,H-R,1978
-786,PAF091,86,32.36198787,35.03146349,CS 2470,Neo Chorio,Agnades,Αγνάδες,,N,N,,H,H,1978
-787,PAF092,87,32.29311009,35.04927794,CS 2105,Neo Chorio,Ayios Kononas/Kashia tous lakkous,Άγιος Κόνωνας/Κασιά τους λάκκους,,N,N,,R,R,1974
-788,PAF093,88,32.57680698,34.73727712,CS 2359,Nikokleia,Teratsies tou Skarnou,Τερατσιές του Σκάρνου,,N,N,,H-R,H-R,1976
-789,PAF094,184,32.57989919,35.16936727,CS 1417,Pachyammos,,,,Ts,Ts,CG,H,CG and H,1963
-808,PAF113,426,32.41867827,34.7544378,PM 2454,Paphos,,,near Paphos Beach Hotel,T,T,,H-R,H(?)-R,1980
-809,PAF114,426,32.41867827,34.7544378,,Paphos,,,"1,5 klm south of the ""Tombs of the Kings""",T,T,,R,R,1981
-810,PAF115,426,32.41867827,34.7544378,PM 2463 T3/81,Paphos,,,Βόρεια της βόρειας εισόδου των τειχών της πόλης (Melina Hotel),T,T,,R,R,1981
-811,PAF116,426,32.41867827,34.7544378,PM 2518 T1/83,Paphos,Glyky Nero,Γλυκύ Νερό,,T,T,,H-R,H and R,1983
-812,PAF117,426,32.41867827,34.7544378,PM 2519 Τ2/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,R,R,1983
-813,PAF118,426,32.41867827,34.7544378,PM 2520 Τ3/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,H,1983
-814,PAF119,426,32.41867827,34.7544378,PM 2521 Τ4/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-815,PAF120,426,32.41867827,34.7544378,PM 2522 Τ5/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-816,PAF121,426,32.41867827,34.7544378,PM 2523 Τ6/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-817,PAF122,426,32.41867827,34.7544378,PM 2524 Τ7/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-818,PAF123,426,32.41867827,34.7544378,PM 2525 Τ8/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-819,PAF124,426,32.41867827,34.7544378,PM 2526 Τ9/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-820,PAF125,426,32.41867827,34.7544378,PM 2527 Τ10/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H or R,1983
-821,PAF126,426,32.41867827,34.7544378,PM 2536 Τ13/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H and R,1983
-822,PAF127,426,32.41867827,34.7544378,PM 2542 Τ16/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1983
-823,PAF128,426,32.41867827,34.7544378,PM 2545 Τ19/83,Paphos,Glyky Nero,Γλυκύ Νερό,,T,T,,R,R,1983
-824,PAF129,426,32.41867827,34.7544378,PM 2548 Τ22/83,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H and R,1983
-825,PAF130,426,32.41867827,34.7544378,PM 2581 Τ1/84,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,R,R,1984
-826,PAF131,426,32.41867827,34.7544378,PM 2584 T2/84,Paphos,,,Diagorou street,T,T,,H-R,H-R,1984
-827,PAF132,426,32.41867827,34.7544378,PM 2606 Τ24/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,R,R,1984
-828,PAF133,426,32.41867827,34.7544378,PM 2628 T41/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H (?),1984
-829,PAF134,426,32.41867827,34.7544378,PM 2632 Τ45/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1984
-830,PAF135,426,32.41867827,34.7544378,PM 2658 Τ71/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H with R reuse,1984
-831,PAF136,426,32.41867827,34.7544378,PM 2670 T83/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1984
-832,PAF137,426,32.41867827,34.7544378,PM 2691 Τ104/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1984
-833,PAF138,426,32.41867827,34.7544378,PM 2693 Τ106/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1984
-834,PAF139,426,32.41867827,34.7544378,PM 2694 Τ107/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1984
-835,PAF140,426,32.41867827,34.7544378,PM 2704 Τ116/84,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1984
-836,PAF141,426,32.41867827,34.7544378,PM 2707 T118/84,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,H,1984
-837,PAF142,426,32.41867827,34.7544378,PM 2718 Τ129/84,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,Η (?),1984
-838,PAF143,426,32.41867827,34.7544378,PM 2726 Τ137/84,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,R,R,1984
-839,PAF144,426,32.41867827,34.7544378,PM 2728 Τ139/84,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,Η (?),1984
-840,PAF145,426,32.41867827,34.7544378,PM 2737 T148/84,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,,1984
-841,PAF146,426,32.41867827,34.7544378,PM 2770 Τ6/85,Paphos,Glyky Nero,Γλυκύ Νερό,,T,T,,H-R,,1985
-842,PAF147,426,32.41867827,34.7544378,PM 2779 Τ15/85,Paphos,,,Iasonos street (Omiros Hotel Apartments),T,T,,H-R,H-R,1985
-843,PAF148,426,32.41867827,34.7544378,PM 2780 T16/1985,Paphos,,,Iasonos street (Omiros Hotel Apartments),T,T,,H,Η (?),1985
-844,PAF149,426,32.41867827,34.7544378,PM 2784 Τ20/85,Paphos,,,Iasonos street (Omiros Hotel Apartments),T,T,,H-R,H and R,1985
-845,PAF150,426,32.41867827,34.7544378,PM 2791 Τ27/85,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H and R,1985
-846,PAF151,426,32.41867827,34.7544378,PM 2792 Τ28/85,Paphos,,,Trikalon street,T,T,,H,H,1985
-847,PAF152,426,32.41867827,34.7544378,PM 2811 Τ11/86,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H,1986
-848,PAF153,426,32.41867827,34.7544378,PM 2814 Τ14/86,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H (?),1986
-849,PAF154,426,32.41867827,34.7544378,PM 2838 Τ38/86,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H (?),1986
-850,PAF155,426,32.41867827,34.7544378,PM 2867 Τ66/86,Paphos,,,Poseidonos avenue (opposite Annabelle Hotel),T,T,,H,H (?),1986
-851,PAF156,426,32.41867827,34.7544378,PM 2892 Τ81/86,Paphos,,,Diagorou street (Silverhouse  Hotel Apartments),T,T,,H-R,H-R,1986
-852,PAF157,426,32.41867827,34.7544378,PM 2897 T86/86,Paphos,,,Diagorou street (Silverhouse  Hotel Apartments),T,T,,H-R,H-R,1986
-853,PAF158,426,32.41867827,34.7544378,PM 2902 T91/86,Paphos,,,Diagorou street (Silverhouse  Hotel Apartments),T,T,,H-R,H-R,1986
-854,PAF159,426,32.41867827,34.7544378,PM 2905 T94/86,Paphos,,,Diagorou street (Silverhouse  Hotel Apartments),T,T,,H-R,H-R,1986
-855,PAF160,426,32.41867827,34.7544378,PM 2914 T103/86,Paphos,,,Diagorou street (Silverhouse  Hotel Apartments),T,T,,H-R,H-R,1986
-856,PAF161,426,32.41867827,34.7544378,PM 2918 T106/86,Paphos,Kato Paphos,,,T,T,,H-R,H-R,1986
-857,PAF162,426,32.41867827,34.7544378,,Paphos,Archaeological site of Nea Paphos_Dionysos house,,,T,T (?),,H,H,1987
-858,PAF163,426,32.41867827,34.7544378,PM 2595,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,H,1987
-859,PAF164,426,32.41867827,34.7544378,PM 2983 Τ31/87,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,H,1987
-860,PAF165,426,32.41867827,34.7544378,PM 2991 Τ5/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H,H (?),1988
-861,PAF166,426,32.41867827,34.7544378,PM 2995 Τ8/88,Paphos,,,"Φ/Σχ. LI 18.3II, τεμ 303",T,T,,H,H (?),1988
-862,PAF167,426,32.41867827,34.7544378,PM 3005 Τ18/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1988
-863,PAF168,426,32.41867827,34.7544378,PM 3006 Τ19/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1988
-864,PAF169,426,32.41867827,34.7544378,PM 3007 Τ20/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1988
-865,PAF170,426,32.41867827,34.7544378,PM 3010 Τ23/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1988
-866,PAF171,426,32.41867827,34.7544378,PM 3020 Τ29/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1988
-867,PAF172,426,32.41867827,34.7544378,PM 3022 Τ31/88,Paphos,,,Poseidonos avenue (Annabelle Hotel),T,T,,H-R,H-R,1988
-868,PAF173,426,32.41867827,34.7544378,PM 3031 Τ41/88,Paphos,Kato Paphos,,Roma Hotel,T,T,,H-R,H-R,1988
-869,PAF174,425,32.40521149,34.77717657,PM 3901,Paphos,Palaiokastron,,,T,T,,H,H,1989
-870,PAF175,425,32.40521149,34.77717657,PM 3091,Paphos,Palaiokastron,,,T,T,,H,H,1989
-871,PAF176,425,32.40521149,34.77717657,PM 3071,Paphos,Palaiokastron,,,T,T,,R,R,1989
-872,PAF177,425,32.40521149,34.77717657,PM 3067/Τ3,Paphos,Palaiokastron,,Roma Hotel,T,T,,R,R,1989
-873,PAF178,425,32.40521149,34.77717657,PM 3165/T3,Paphos,Palaiokastron,,,T,T,,R,R,1992
-874,PAF179,425,32.40521149,34.77717657,PM 3190 T1993/1,Paphos,Palaiokastron,,,T,T,,R,R,1993
-875,PAF180,425,32.40521149,34.77717657,Τ3(?),Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,Η,Η,1977
-876,PAF181,425,32.40521149,34.77717657,Τ3,Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,H,H,1977
-877,PAF182,425,32.40521149,34.77717657,Τ4,Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,H,H,1977
-878,PAF183,425,32.40521149,34.77717657,Τ5 (1978/2),Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,H,H,1977
-879,PAF184,425,32.40521149,34.77717657,Τ6 (1983/1),Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,H,H,1977
-880,PAF185,425,32.40521149,34.77717657,Τ7,Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,H,H,1977
-881,PAF186,425,32.40521149,34.77717657,Τ8 (1979/1),Paphos,Palaiokastron,,"""Tombs of the Kings"" necropolis",T,T,,H,H,1977
-882,PAF187,425,32.40521149,34.77717657,PM 3203 T1993/6,Paphos,Palaiokastron,,"""Tombs of the Kings""",T,T,,R,R,1993
-892,PAF197,92,32.48644649,35.03686415,CS 1315,Pelathousa,Limni,Λίμνη,,N,N,,H,H,1961
-893,PAF198,92,32.48644649,35.03686415,CS 1316,Pelathousa,Limni,Λίμνη,,N,N,,R,R,1961
-894,PAF199,93,32.48871928,35.03280012,CS 1319,Pelathousa,Limni-Athkiatzia,Λίμνη-Αθκιάτζια,,N,N,,H,H,1960
-895,PAF200,94,32.47490517,35.04056881,CS 2794,Pelathousa,Orniatis (Omiatis),Ορνιάτης (Ομιάτης),Sh./Pl. XXVΙ/52,Ts,Ts,,R,R,1995
-896,PAF201,186,32.3285627,34.90497583,,Peyia,Meletis,Μελέτης,Meletis Forest,N,"N (10 visible tombs, 1 unfinished)",,H-R,H-LR,1888
-897,PAF202,185,32.31784368,34.9015955,,Peyia,Agios Georghios,Άγιος Γεώργιος,Ayios Georghios,N,N,,H-R,H-LR,1991
-899,PAF204,188,32.38351747,34.85541607,PM 2486,Peyia,Vatouthkia,Βατούθκια,,T,T,,H,H,1982
-901,PAF206,187,32.37096405,34.87297619,PM 3543,Peyia,Pappara,Παππάρα,,T,T,,H,H,2001
-902,PAF207,189,32.35943248,34.87503332,PM 3717/T1,Peyia,Palaiomonastero,Παλαιομονάστερο,,T,T,,H,H,2007
-903,PAF208,190,32.5082462,34.88566745,,Polemi,,,,N,N,,R,R,1888
-906,PAF211,382,32.41117969,35.03077476,,Poli Chrysochous,Kokkina,Κόκκινα,,N,N,,H-R,H and R,U
-907,PAF212,382,32.41117969,35.03077476,,Poli Chrysochous,Sykarka,Συκαρκά,,N,N,,H-R,H and R,U
-908,PAF213,382,32.41117969,35.03077476,M3,Poli Chrysochous,Sykarka-Kokkina,Συκαρκά-Κόκκινα,,T,T,,H-R,H-R (?),1889
-909,PAF214,382,32.41117969,35.03077476,T1,Poli Chrysochous,Sykarka-Kokkina,Συκαρκά-Κόκκινα,eastern necropolis,T,T,,H,H,1929
-910,PAF215,382,32.41117969,35.03077476,T2,Poli Chrysochous,Sykarka-Kokkina,Συκαρκά-Κόκκινα,eastern necropolis,T,T,,H,H,1929
-911,PAF216,382,32.41117969,35.03077476,T3,Poli Chrysochous,Sykarka-Kokkina,Συκαρκά-Κόκκινα,eastern necropolis,T,T,,H,H (?),1929
-912,PAF217,466,32.43940629,35.04428591,T9,Poli Chrysochous,Potamos (tou Myrmikof),Ποταμός (του Μυρμικόφ),,T,T,,H,H I,1929
-919,PAF224,191,32.43522638,35.04179,,Poli Chrysochous,Koiladia,Κοιλάδια,,N,N,,H,H,2007
-920,PAF225,465,32.4400788,35.04224218,,Poli Chrysochous,Evretades,Ευρετάδες,,Ν,Ν,,H-R,H-R,U
-922,PAF227,192,32.4264603,35.03441077,CS 1266,Poli Chrysochous,,,in the village,T,T,,H,H (?),1960
-923,PAF228,89,32.45161808,35.04105615,CS 1280,Poli Chrysochous,Schinies,Σχινιές,,N,N,,H,H,1960
-924,PAF229,90,32.45095334,35.02975641,CS 1293,Poli Chrysochous,Koliotrypes,Κολιότρυπες,,N,N,,H,H,1960
-925,PAF230,91,32.43438884,35.02540545,CS 1286,Poli Chrysochous,Agia Varvara,Αγία Βαρβάρα,,N,N,,R,R,1960
-926,PAF231,91,32.43438884,35.02540545,CS 1988,Poli Chrysochous,Agia Varvara,Αγία Βαρβάρα,,N,N,CA,H-R,CA-R,1972
-927,PAF232,95,32.53079408,35.14239871,CS 2107 / T2,Pomos,Agiolites,Αγιολύτες,,T,T,,H,H,1974
-928,PAF233,95,32.53079408,35.14239871,PM 1835,Pomos,Afkolites/Agiolites,Αυκολύτες/Αγιολύτες,,T,T,,H-R,H-R,1968
-929,PAF234,95,32.53079408,35.14239871,PM 1922,Pomos,Afkolites/Ayiolites,Αυκολύτες/Αγιολύτες,,T,T,,H,LH,1968
-931,PAF236,23,32.41106931,35.03968514,CS 1299,Prodromi,Kambos,Κάμπος,,N,N,,H,H,1960
-932,PAF237,424,32.4044934,35.03665915,CS 1302,Prodromi,Chalimes,Χαλιμές,,N,N,,R,R,1960
-933,PAF238,97,32.59484278,34.73504809,CS 2314,Souskiou,Plakota,Πλακοτά,"Sheet LII plan 25, plot no 152/1, 154 - 400 metres west of the village on the opposite bank of Dhiarrizos river",N,N,,R,R,1976
-934,PAF239,96,32.59918581,34.72077555,CS 2316,Souskiou,Stalies,Σταλιές,"Sheet LII plan 33, plot nos 117, 118 - 2 miles south-east of the village on the top of the hill east of the road to Archimandrita",N,N,,H-R,H (-R),1976
-935,PAF240,474,32.4776241,35.01200132,,Steni,,,Around the monastery of Panayia Chrysolakourna,N,N,,H,H,1926
-936,PAF241,98,32.47220681,34.99262226,CS 2033,Steni,Kapsala,Καψάλα,,T,T,,R,R,1973
-937,PAF242,383,32.4833329,34.8833339,,Stroumbi,,,,N,N,,R,R,1888
-938,PAF243,101,32.51191444,34.7098436,CS 2351,Timi,Stillarka,Στιλλάρκα,,N,N,,R,R,1976
-939,PAF244,100,32.50833668,34.71086945,CS 2353,Timi,Vounaros,Βούναρος,,N,N,,H-R,H-R,1976
-940,PAF245,99,32.50569311,34.81744857,CS 2340,Tsada,Skoutellin,Σκουτέλλιν,,N,N,,R,R,1976
+// ── Mobile nav toggle ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.querySelector('.header-nav');
+  if (!toggle || !nav) return;
+  toggle.addEventListener('click', () => {
+    const open = nav.classList.toggle('nav-open');
+    toggle.classList.toggle('nav-open', open);
+  });
+  nav.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      nav.classList.remove('nav-open');
+      toggle.classList.remove('nav-open');
+    });
+  });
+
+  // Sidebar filter toggle (mobile)
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebarToggle && sidebar) {
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('filters-open');
+    });
+  }
+});
+
+let TOMB_DATA = [];
+
+// Colour coding: type-based
+const TOMB_COLORS = { N: '#e8a45a', T: '#7c6af7' };
+
+// ── Map Init ─────────────────────────────────────────────────────────────────
+
+let map;
+
+async function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 35.0, lng: 33.15 },
+    zoom: 9,
+    mapTypeId: 'roadmap',
+    disableDefaultUI: false,
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+    gestureHandling: 'cooperative',
+  });
+
+  // Load tomb data then initialise filters
+  TOMB_DATA = await loadTombData();
+  initTombFilters();
+  updateTombCount(0);
+
+  // KML boundary toggles
+  const kmlLayers = [
+    { id: 'kml-100m-toggle', file: '100m_boundary_KML.kml', color: '#e63946' },
+    { id: 'kml-250m-toggle', file: '250m_boundary_KML.kml', color: '#f4a261' },
+    { id: 'kml-500m-toggle', file: '500m_boundary_KML.kml', color: '#2a9d8f' },
+  ];
+  kmlLayers.forEach(layer => {
+    const toggle = document.getElementById(layer.id);
+    if (!toggle) return;
+    toggle.addEventListener('change', async () => {
+      if (toggle.checked) await showKmlLayer(layer);
+      else hideKmlLayer(layer);
+    });
+  });
+}
+
+// ── KML boundary overlays ─────────────────────────────────────────────────────
+
+async function showKmlLayer(layer) {
+  if (layer.polygons) {
+    layer.polygons.forEach(p => p.setMap(map));
+    return;
+  }
+  try {
+    const text = await fetch(layer.file).then(r => r.text());
+    const kml = new DOMParser().parseFromString(text, 'text/xml');
+    const polys = [];
+    kml.querySelectorAll('Placemark').forEach(pm => {
+      pm.querySelectorAll('coordinates').forEach(coordEl => {
+        const coords = coordEl.textContent.trim().split(/\s+/).map(c => {
+          const [lng, lat] = c.split(',').map(Number);
+          return { lat, lng };
+        }).filter(c => !isNaN(c.lat) && !isNaN(c.lng));
+        if (coords.length > 2) {
+          polys.push(new google.maps.Polygon({
+            paths: coords,
+            strokeColor: layer.color,
+            strokeOpacity: 0.8,
+            strokeWeight: 1.5,
+            fillColor: layer.color,
+            fillOpacity: 0,
+            map,
+          }));
+        }
+      });
+    });
+    layer.polygons = polys;
+  } catch (err) {
+    console.error(`Failed to load ${layer.file}:`, err);
+  }
+}
+
+function hideKmlLayer(layer) {
+  if (layer.polygons) layer.polygons.forEach(p => p.setMap(null));
+}
+
+
+
+// ── CSV loader ───────────────────────────────────────────────────────────────
+
+function parseCSVLine(line) {
+  const fields = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuote = !inQuote; continue; }
+    if (ch === ',' && !inQuote) { fields.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  fields.push(cur);
+  return fields;
+}
+
+function normaliseChron(raw) {
+  const v = raw.trim();
+  if (v === 'Η' || v === 'H (?)') return 'H'; // Greek eta / uncertain → H
+  return v;
+}
+
+function normaliseType(raw) {
+  const v = raw.trim();
+  if (v === 'Ν') return 'N';           // Greek nu → N
+  if (v === 'Τ' || v === 'Ts') return 'T'; // Greek tau / Ts → T
+  return v;
+}
+
+function classifyRisk(points) {
+  if (isNaN(points)) return null;
+  if (points >= 240) return 'CE';
+  if (points >= 180) return 'E';
+  if (points >= 120) return 'V';
+  if (points >= 60)  return 'MR';
+  if (points >= 20)  return 'LR';
+  return 'NR';
+}
+
+async function loadTombData() {
+  const text = await fetch('tombs_necropoleis.csv').then(r => r.text());
+  const [headerLine, ...rows] = text.trim().split(/\r?\n/);
+  const headers = parseCSVLine(headerLine);
+  const idx = name => headers.indexOf(name);
+
+  return rows.map(row => {
+    const f = parseCSVLine(row);
+    return {
+      id:     f[idx('serial_no')],
+      lat:    parseFloat(f[idx('y')]),
+      lng:    parseFloat(f[idx('x')]),
+      town:   f[idx('town_village')],
+      name:   f[idx('toponym_en')] || '',
+      type:   normaliseType(f[idx('nechropoleis_tombs')]),
+      chron:  normaliseChron(f[idx('chronology')]),
+      risk:   classifyRisk(parseFloat(f[idx('average_points')])),
+    };
+  }).filter(d => !isNaN(d.lat) && !isNaN(d.lng));
+}
+
+// ── Tomb filter system ────────────────────────────────────────────────────────
+
+// Shared info window for all tomb markers
+let tombInfoWindow;
+// Pre-created marker objects, one per TOMB_DATA entry
+let tombMarkerObjects = null;
+// posKey → [indices] for entries currently passing filters, updated each applyTombFilters
+let currentPosVisible = {};
+
+// Current filter state
+const tombFilters = {
+  type:  new Set(),   // 'N', 'T'
+  chron: new Set(),   // 'R', 'H-R', 'H'
+  risk:  new Set(),   // 'CE', 'E', 'V', 'MR', 'LR', 'NR'
+  town:  new Set(),   // set of selected towns (empty = all)
+};
+
+function initTombFilters() {
+  tombInfoWindow = new google.maps.InfoWindow();
+
+  // Type checkboxes
+  document.querySelectorAll('.tomb-type-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) tombFilters.type.add(cb.value);
+      else tombFilters.type.delete(cb.value);
+      applyTombFilters();
+    });
+  });
+
+  // Chronology checkboxes
+  document.querySelectorAll('.tomb-chron-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) tombFilters.chron.add(cb.value);
+      else tombFilters.chron.delete(cb.value);
+      applyTombFilters();
+    });
+  });
+
+  // Risk classification checkboxes
+  document.querySelectorAll('.tomb-risk-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) tombFilters.risk.add(cb.value);
+      else tombFilters.risk.delete(cb.value);
+      applyTombFilters();
+    });
+  });
+
+  // Town / Village checkboxes — populated from data
+  const townList = document.getElementById('tomb-town-list');
+  if (townList) {
+    const towns = [...new Set(TOMB_DATA.map(d => d.town).filter(Boolean))].sort();
+
+    // ── "All" toggle ──
+    const allLabel = document.createElement('label');
+    allLabel.className = 'layer-item town-all';
+    allLabel.innerHTML = `
+      <input type="checkbox" id="tomb-town-all" />
+      <span class="checkbox-custom">
+        <svg class="check-icon" viewBox="0 0 12 10"><polyline points="1,5 4,9 11,1"/></svg>
+      </span>
+      All
+    `;
+    const allCb = allLabel.querySelector('input');
+    townList.appendChild(allLabel);
+
+    // ── Individual town checkboxes ──
+    const townCbs = [];
+    towns.forEach(town => {
+      const label = document.createElement('label');
+      label.className = 'layer-item';
+      label.innerHTML = `
+        <input type="checkbox" class="tomb-town-cb" value="${town.replace(/"/g, '&quot;')}" />
+        <span class="checkbox-custom">
+          <svg class="check-icon" viewBox="0 0 12 10"><polyline points="1,5 4,9 11,1"/></svg>
+        </span>
+        ${town}
+      `;
+      const cb = label.querySelector('input');
+      cb.addEventListener('change', e => {
+        if (e.target.checked) tombFilters.town.add(town);
+        else tombFilters.town.delete(town);
+        // Sync "All" state
+        const checkedCount = townCbs.filter(c => c.checked).length;
+        allCb.checked = checkedCount === towns.length;
+        allCb.indeterminate = checkedCount > 0 && checkedCount < towns.length;
+        applyTombFilters();
+      });
+      townCbs.push(cb);
+      townList.appendChild(label);
+    });
+
+    allCb.addEventListener('change', () => {
+      townCbs.forEach(cb => {
+        cb.checked = allCb.checked;
+        if (allCb.checked) tombFilters.town.add(cb.value);
+        else tombFilters.town.delete(cb.value);
+      });
+      allCb.indeterminate = false;
+      applyTombFilters();
+    });
+  }
+}
+
+function ensureTombMarkersCreated() {
+  if (tombMarkerObjects !== null) return;
+
+  tombMarkerObjects = TOMB_DATA.map(d => {
+    const color = TOMB_COLORS[d.type] || '#aaa';
+    const marker = new google.maps.Marker({
+      position: { lat: d.lat, lng: d.lng },
+      map,
+      title: d.name,
+      icon: tombDotIcon(color),
+      visible: false,
+    });
+
+    marker.addListener('click', () => {
+      const key = `${d.lat},${d.lng}`;
+      const group = currentPosVisible[key] || [i];
+      const CHRON = { R: 'Roman', 'H-R': 'Hellenistic–Roman', H: 'Hellenistic' };
+      const S = 'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',system-ui,sans-serif;padding:4px 2px;max-width:260px';
+
+      // Group all entries at this position by name
+      const byName = {};
+      group.forEach(idx => {
+        const e = TOMB_DATA[idx];
+        if (!byName[e.name]) byName[e.name] = [];
+        byName[e.name].push(e);
+      });
+      const rows = Object.entries(byName).map(([name, entries]) => {
+        const tl = entries[0].type === 'N' ? 'Necropolis' : 'Tomb';
+        const cl = CHRON[entries[0].chron] || entries[0].chron;
+        const countText = entries.length > 1 ? `${entries.length} ${tl}s` : tl;
+        return `<div style="padding:5px 0;border-bottom:1px solid #eee">
+          <div style="font-weight:600;font-size:13px;color:#111">${name}</div>
+          <div style="font-size:11px;color:#666;margin-top:2px">${countText} · ${cl}</div>
+        </div>`;
+      }).join('');
+      const totalLabel = group.length === 1 ? '1 site' : `${group.length} sites`;
+      const content = `<div style="${S}">
+        <div style="font-weight:600;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${totalLabel} · ${d.town}</div>
+        ${rows}
+      </div>`;
+      tombInfoWindow.setContent(content);
+      tombInfoWindow.open(map, marker);
+    });
+
+    return marker;
+  });
+}
+
+function applyTombFilters() {
+  // Only create markers once at least one filter is active
+  const anyActive =
+    tombFilters.type.size  > 0 ||
+    tombFilters.chron.size > 0 ||
+    tombFilters.risk.size  > 0 ||
+    tombFilters.town.size  > 0;
+
+  if (!anyActive) {
+    if (tombMarkerObjects) tombMarkerObjects.forEach(m => m.setVisible(false));
+    currentPosVisible = {};
+    updateTombCount(0);
+    return;
+  }
+
+  ensureTombMarkersCreated();
+
+  // First pass: which entries pass the active filters?
+  const passes = TOMB_DATA.map(d => {
+    const passType  = tombFilters.type.size  === 0 || tombFilters.type.has(d.type);
+    const passChron = tombFilters.chron.size === 0 || tombFilters.chron.has(d.chron);
+    const passRisk  = tombFilters.risk.size  === 0 || tombFilters.risk.has(d.risk);
+    const passTown  = tombFilters.town.size  === 0 || tombFilters.town.has(d.town);
+    return passType && passChron && passRisk && passTown;
+  });
+
+  // Group passing entries by position
+  currentPosVisible = {};
+  TOMB_DATA.forEach((d, i) => {
+    if (!passes[i]) return;
+    const key = `${d.lat},${d.lng}`;
+    if (!currentPosVisible[key]) currentPosVisible[key] = [];
+    currentPosVisible[key].push(i);
+  });
+
+  // Second pass: show one representative marker per position, with count badge if stacked
+  let visible = 0;
+  TOMB_DATA.forEach((d, i) => {
+    const key = `${d.lat},${d.lng}`;
+    const group = currentPosVisible[key];
+    if (group && group[0] === i) {
+      tombMarkerObjects[i].setIcon(tombDotIcon(TOMB_COLORS[d.type] || '#aaa', group.length));
+      tombMarkerObjects[i].setVisible(true);
+      visible += group.length;
+    } else {
+      tombMarkerObjects[i].setVisible(false);
+    }
+  });
+
+  updateTombCount(visible);
+}
+
+function updateTombCount(n) {
+  const el = document.getElementById('tomb-count');
+  if (el) el.textContent = `${n} shown`;
+}
+
+function tombDotIcon(color, count = 1) {
+  if (count > 1) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+      <circle cx="11" cy="11" r="10" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.2"/>
+      <text x="11" y="11" dominant-baseline="central" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
+    </svg>`.trim();
+    return {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+      scaledSize: new google.maps.Size(22, 22),
+      anchor: new google.maps.Point(11, 11),
+    };
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+    <circle cx="7" cy="7" r="5.5" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.2"/>
+  </svg>`.trim();
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(14, 14),
+    anchor: new google.maps.Point(7, 7),
+  };
+}
+
+// ── Dark map style ────────────────────────────────────────────────────────────
+
