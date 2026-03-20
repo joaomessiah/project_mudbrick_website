@@ -1,402 +1,941 @@
-// ── Mobile nav toggle ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const toggle = document.getElementById('nav-toggle');
-  const nav = document.querySelector('.header-nav');
-  if (!toggle || !nav) return;
-  toggle.addEventListener('click', () => {
-    const open = nav.classList.toggle('nav-open');
-    toggle.classList.toggle('nav-open', open);
-  });
-  nav.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      nav.classList.remove('nav-open');
-      toggle.classList.remove('nav-open');
-    });
-  });
-
-  // Sidebar filter toggle (mobile)
-  const sidebarToggle = document.getElementById('sidebar-toggle');
-  const sidebar = document.querySelector('.sidebar');
-  if (sidebarToggle && sidebar) {
-    sidebarToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('filters-open');
-    });
-  }
-});
-
-let TOMB_DATA = [];
-
-// Colour coding: type-based
-const TOMB_COLORS = { N: '#e8a45a', T: '#7c6af7' };
-
-// ── Map Init ─────────────────────────────────────────────────────────────────
-
-let map;
-
-async function initMap() {
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: 35.0, lng: 33.15 },
-    zoom: 9,
-    mapTypeId: 'roadmap',
-    disableDefaultUI: false,
-    zoomControl: true,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: true,
-    gestureHandling: 'cooperative',
-  });
-
-  // Load tomb data then initialise filters
-  TOMB_DATA = await loadTombData();
-  initTombFilters();
-  updateTombCount(0);
-
-  // KML boundary toggles
-  const kmlLayers = [
-    { id: 'kml-100m-toggle', file: '100m_boundary_KML.kml', color: '#e63946' },
-    { id: 'kml-250m-toggle', file: '250m_boundary_KML.kml', color: '#f4a261' },
-    { id: 'kml-500m-toggle', file: '500m_boundary_KML.kml', color: '#2a9d8f' },
-  ];
-  kmlLayers.forEach(layer => {
-    const toggle = document.getElementById(layer.id);
-    if (!toggle) return;
-    toggle.addEventListener('change', async () => {
-      if (toggle.checked) await showKmlLayer(layer);
-      else hideKmlLayer(layer);
-    });
-  });
-}
-
-// ── KML boundary overlays ─────────────────────────────────────────────────────
-
-async function showKmlLayer(layer) {
-  if (layer.polygons) {
-    layer.polygons.forEach(p => p.setMap(map));
-    return;
-  }
-  try {
-    const text = await fetch(layer.file).then(r => r.text());
-    const kml = new DOMParser().parseFromString(text, 'text/xml');
-    const polys = [];
-    kml.querySelectorAll('Placemark').forEach(pm => {
-      pm.querySelectorAll('coordinates').forEach(coordEl => {
-        const coords = coordEl.textContent.trim().split(/\s+/).map(c => {
-          const [lng, lat] = c.split(',').map(Number);
-          return { lat, lng };
-        }).filter(c => !isNaN(c.lat) && !isNaN(c.lng));
-        if (coords.length > 2) {
-          polys.push(new google.maps.Polygon({
-            paths: coords,
-            strokeColor: layer.color,
-            strokeOpacity: 0.8,
-            strokeWeight: 1.5,
-            fillColor: layer.color,
-            fillOpacity: 0,
-            map,
-          }));
-        }
-      });
-    });
-    layer.polygons = polys;
-  } catch (err) {
-    console.error(`Failed to load ${layer.file}:`, err);
-  }
-}
-
-function hideKmlLayer(layer) {
-  if (layer.polygons) layer.polygons.forEach(p => p.setMap(null));
-}
-
-
-
-// ── CSV loader ───────────────────────────────────────────────────────────────
-
-function parseCSVLine(line) {
-  const fields = [];
-  let cur = '', inQuote = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { inQuote = !inQuote; continue; }
-    if (ch === ',' && !inQuote) { fields.push(cur); cur = ''; continue; }
-    cur += ch;
-  }
-  fields.push(cur);
-  return fields;
-}
-
-function normaliseChron(raw) {
-  const v = raw.trim();
-  if (v === 'Η' || v === 'H (?)') return 'H'; // Greek eta / uncertain → H
-  return v;
-}
-
-function normaliseType(raw) {
-  const v = raw.trim();
-  if (v === 'Ν') return 'N';           // Greek nu → N
-  if (v === 'Τ' || v === 'Ts') return 'T'; // Greek tau / Ts → T
-  return v;
-}
-
-function classifyRisk(points) {
-  if (isNaN(points)) return null;
-  if (points >= 240) return 'CE';
-  if (points >= 180) return 'E';
-  if (points >= 120) return 'V';
-  if (points >= 60)  return 'MR';
-  if (points >= 20)  return 'LR';
-  return 'NR';
-}
-
-async function loadTombData() {
-  const text = await fetch('tombs_necropoleis.csv').then(r => r.text());
-  const [headerLine, ...rows] = text.trim().split(/\r?\n/);
-  const headers = parseCSVLine(headerLine);
-  const idx = name => headers.indexOf(name);
-
-  return rows.map(row => {
-    const f = parseCSVLine(row);
-    return {
-      id:     f[idx('serial_no')],
-      lat:    parseFloat(f[idx('y')]),
-      lng:    parseFloat(f[idx('x')]),
-      town:   f[idx('town_village')],
-      name:   f[idx('toponym_en')] || '',
-      type:   normaliseType(f[idx('nechropoleis_tombs')]),
-      chron:  normaliseChron(f[idx('chronology')]),
-      risk:   classifyRisk(parseFloat(f[idx('average_points')])),
-    };
-  }).filter(d => !isNaN(d.lat) && !isNaN(d.lng));
-}
-
-// ── Tomb filter system ────────────────────────────────────────────────────────
-
-// Shared info window for all tomb markers
-let tombInfoWindow;
-// Pre-created marker objects, one per TOMB_DATA entry
-let tombMarkerObjects = null;
-// posKey → [indices] for entries currently passing filters, updated each applyTombFilters
-let currentPosVisible = {};
-
-// Current filter state
-const tombFilters = {
-  type:  new Set(),   // 'N', 'T'
-  chron: new Set(),   // 'R', 'H-R', 'H'
-  risk:  new Set(),   // 'CE', 'E', 'V', 'MR', 'LR', 'NR'
-  town:  new Set(),   // set of selected towns (empty = all)
-};
-
-function initTombFilters() {
-  tombInfoWindow = new google.maps.InfoWindow();
-
-  // Type checkboxes
-  document.querySelectorAll('.tomb-type-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      if (cb.checked) tombFilters.type.add(cb.value);
-      else tombFilters.type.delete(cb.value);
-      applyTombFilters();
-    });
-  });
-
-  // Chronology checkboxes
-  document.querySelectorAll('.tomb-chron-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      if (cb.checked) tombFilters.chron.add(cb.value);
-      else tombFilters.chron.delete(cb.value);
-      applyTombFilters();
-    });
-  });
-
-  // Risk classification checkboxes
-  document.querySelectorAll('.tomb-risk-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      if (cb.checked) tombFilters.risk.add(cb.value);
-      else tombFilters.risk.delete(cb.value);
-      applyTombFilters();
-    });
-  });
-
-  // Town / Village checkboxes — populated from data
-  const townList = document.getElementById('tomb-town-list');
-  if (townList) {
-    const towns = [...new Set(TOMB_DATA.map(d => d.town).filter(Boolean))].sort();
-
-    // ── "All" toggle ──
-    const allLabel = document.createElement('label');
-    allLabel.className = 'layer-item town-all';
-    allLabel.innerHTML = `
-      <input type="checkbox" id="tomb-town-all" />
-      <span class="checkbox-custom">
-        <svg class="check-icon" viewBox="0 0 12 10"><polyline points="1,5 4,9 11,1"/></svg>
-      </span>
-      All
-    `;
-    const allCb = allLabel.querySelector('input');
-    townList.appendChild(allLabel);
-
-    // ── Individual town checkboxes ──
-    const townCbs = [];
-    towns.forEach(town => {
-      const label = document.createElement('label');
-      label.className = 'layer-item';
-      label.innerHTML = `
-        <input type="checkbox" class="tomb-town-cb" value="${town.replace(/"/g, '&quot;')}" />
-        <span class="checkbox-custom">
-          <svg class="check-icon" viewBox="0 0 12 10"><polyline points="1,5 4,9 11,1"/></svg>
-        </span>
-        ${town}
-      `;
-      const cb = label.querySelector('input');
-      cb.addEventListener('change', e => {
-        if (e.target.checked) tombFilters.town.add(town);
-        else tombFilters.town.delete(town);
-        // Sync "All" state
-        const checkedCount = townCbs.filter(c => c.checked).length;
-        allCb.checked = checkedCount === towns.length;
-        allCb.indeterminate = checkedCount > 0 && checkedCount < towns.length;
-        applyTombFilters();
-      });
-      townCbs.push(cb);
-      townList.appendChild(label);
-    });
-
-    allCb.addEventListener('change', () => {
-      townCbs.forEach(cb => {
-        cb.checked = allCb.checked;
-        if (allCb.checked) tombFilters.town.add(cb.value);
-        else tombFilters.town.delete(cb.value);
-      });
-      allCb.indeterminate = false;
-      applyTombFilters();
-    });
-  }
-}
-
-function ensureTombMarkersCreated() {
-  if (tombMarkerObjects !== null) return;
-
-  tombMarkerObjects = TOMB_DATA.map(d => {
-    const color = TOMB_COLORS[d.type] || '#aaa';
-    const marker = new google.maps.Marker({
-      position: { lat: d.lat, lng: d.lng },
-      map,
-      title: d.name,
-      icon: tombDotIcon(color),
-      visible: false,
-    });
-
-    marker.addListener('click', () => {
-      const key = `${d.lat},${d.lng}`;
-      const group = currentPosVisible[key] || [i];
-      const CHRON = { R: 'Roman', 'H-R': 'Hellenistic–Roman', H: 'Hellenistic' };
-      const S = 'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',system-ui,sans-serif;padding:4px 2px;max-width:260px';
-
-      // Group all entries at this position by name
-      const byName = {};
-      group.forEach(idx => {
-        const e = TOMB_DATA[idx];
-        if (!byName[e.name]) byName[e.name] = [];
-        byName[e.name].push(e);
-      });
-      const rows = Object.entries(byName).map(([name, entries]) => {
-        const tl = entries[0].type === 'N' ? 'Necropolis' : 'Tomb';
-        const cl = CHRON[entries[0].chron] || entries[0].chron;
-        const countText = entries.length > 1 ? `${entries.length} ${tl}s` : tl;
-        return `<div style="padding:5px 0;border-bottom:1px solid #eee">
-          <div style="font-weight:600;font-size:13px;color:#111">${name}</div>
-          <div style="font-size:11px;color:#666;margin-top:2px">${countText} · ${cl}</div>
-        </div>`;
-      }).join('');
-      const totalLabel = group.length === 1 ? '1 site' : `${group.length} sites`;
-      const content = `<div style="${S}">
-        <div style="font-weight:600;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${totalLabel} · ${d.town}</div>
-        ${rows}
-      </div>`;
-      tombInfoWindow.setContent(content);
-      tombInfoWindow.open(map, marker);
-    });
-
-    return marker;
-  });
-}
-
-function applyTombFilters() {
-  // Only create markers once at least one filter is active
-  const anyActive =
-    tombFilters.type.size  > 0 ||
-    tombFilters.chron.size > 0 ||
-    tombFilters.risk.size  > 0 ||
-    tombFilters.town.size  > 0;
-
-  if (!anyActive) {
-    if (tombMarkerObjects) tombMarkerObjects.forEach(m => m.setVisible(false));
-    currentPosVisible = {};
-    updateTombCount(0);
-    return;
-  }
-
-  ensureTombMarkersCreated();
-
-  // First pass: which entries pass the active filters?
-  const passes = TOMB_DATA.map(d => {
-    const passType  = tombFilters.type.size  === 0 || tombFilters.type.has(d.type);
-    const passChron = tombFilters.chron.size === 0 || tombFilters.chron.has(d.chron);
-    const passRisk  = tombFilters.risk.size  === 0 || tombFilters.risk.has(d.risk);
-    const passTown  = tombFilters.town.size  === 0 || tombFilters.town.has(d.town);
-    return passType && passChron && passRisk && passTown;
-  });
-
-  // Group passing entries by position
-  currentPosVisible = {};
-  TOMB_DATA.forEach((d, i) => {
-    if (!passes[i]) return;
-    const key = `${d.lat},${d.lng}`;
-    if (!currentPosVisible[key]) currentPosVisible[key] = [];
-    currentPosVisible[key].push(i);
-  });
-
-  // Second pass: show one representative marker per position, with count badge if stacked
-  let visible = 0;
-  TOMB_DATA.forEach((d, i) => {
-    const key = `${d.lat},${d.lng}`;
-    const group = currentPosVisible[key];
-    if (group && group[0] === i) {
-      tombMarkerObjects[i].setIcon(tombDotIcon(TOMB_COLORS[d.type] || '#aaa', group.length));
-      tombMarkerObjects[i].setVisible(true);
-      visible += group.length;
-    } else {
-      tombMarkerObjects[i].setVisible(false);
-    }
-  });
-
-  updateTombCount(visible);
-}
-
-function updateTombCount(n) {
-  const el = document.getElementById('tomb-count');
-  if (el) el.textContent = `${n} shown`;
-}
-
-function tombDotIcon(color, count = 1) {
-  if (count > 1) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
-      <circle cx="11" cy="11" r="10" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.2"/>
-      <text x="11" y="11" dominant-baseline="central" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
-    </svg>`.trim();
-    return {
-      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-      scaledSize: new google.maps.Size(22, 22),
-      anchor: new google.maps.Point(11, 11),
-    };
-  }
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
-    <circle cx="7" cy="7" r="5.5" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.2"/>
-  </svg>`.trim();
-  return {
-    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-    scaledSize: new google.maps.Size(14, 14),
-    anchor: new google.maps.Point(7, 7),
-  };
-}
-
-// ── Dark map style ────────────────────────────────────────────────────────────
-
+serial_no,town_village,toponym_en,nechropoleis_tombs,chronology,average_points,x,y,agriculture_100m,archaeological_100m,infrastructure_100m,urban_100m,not_classified_100m,Points_100m,agriculture_250m,archaeological_250m,infrastructure_250m,urban_250m,not_classified_250m,Points_250m,agriculture_500m,archaeological_500m,infrastructure_500m,urban_500m,not_classified_500m,Points_500m
+37,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+38,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+111,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+112,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+136,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+137,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+138,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+139,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+140,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+141,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+142,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+143,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+148,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+162,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+191,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+197,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+210,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+211,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+212,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+226,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+227,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+242,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+243,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+247,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+264,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+265,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+268,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+278,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+291,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+294,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+295,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+296,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+297,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+298,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+299,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+300,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+312,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+314,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+315,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+316,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+327,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+339,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+360,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+361,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+369,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+370,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+371,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+372,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+373,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+374,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+375,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+383,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+389,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+398,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+401,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+461,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+465,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+466,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+467,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+468,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+469,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+470,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+471,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+472,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+473,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+474,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+475,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+476,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+477,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+478,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+479,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+480,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+481,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+482,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+483,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+484,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+485,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+486,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+487,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+488,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+489,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+490,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+491,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+492,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+493,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+499,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+506,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+507,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+508,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+511,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+514,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+515,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+516,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+517,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+518,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+519,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+520,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+521,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+522,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+523,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+533,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+537,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+542,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+549,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+582,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+584,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+615,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+649,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+650,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+651,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+652,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+663,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+680,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+693,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+701,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+704,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+708,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+714,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+715,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+718,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+729,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+735,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+736,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+737,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+738,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+739,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+740,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+756,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+771,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+790,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+791,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+792,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+793,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+794,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+795,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+796,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+797,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+798,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+799,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+800,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+801,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+802,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+803,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+804,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+805,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+806,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+807,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+883,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+884,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+885,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+886,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+887,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+888,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+889,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+890,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+891,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+898,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+900,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+904,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+905,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+913,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+914,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+915,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+916,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+917,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+918,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+921,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+930,Agios Serghios,Koumentelis,N,H,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+706,Agios Georgios,Loutron,N,R,51.94,32.63562302,34.76778006,0.00%,0.00%,14.49%,5.30%,80.20%,44.90,8.09%,0.00%,20.46%,6.49%,64.96%,68.49,4.88%,0.00%,14.85%,2.62%,77.66%,42.42
+328,Larnaka,Perivolia,N,H,261.52,33.62345969,34.92828462,0.00%,0.00%,31.93%,68.07%,0.00%,268.07,0.00%,0.00%,41.53%,58.47%,0.00%,258.47,0.00%,0.00%,41.98%,58.02%,0.00%,258.02
+337,Pergamos,Geneokopetra,N,H,38.70,33.70275864,35.05550707,52.60%,0.00%,0.00%,0.00%,47.40%,52.60,29.67%,0.00%,2.28%,0.00%,68.05%,34.24,21.31%,0.00%,3.97%,0.00%,74.71%,29.26
+334,Mosfiloti,Spilioi,N,H,13.74,33.43794695,34.97773252,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.97%,0.00%,9.84%,0.00%,89.19%,20.65,1.06%,0.00%,9.24%,0.34%,89.36%,20.56
+350,Xylotymbou,Laksia Ayiou Vasileiou,N,H,104.21,33.73720243,35.02034032,13.69%,0.00%,19.56%,0.00%,66.75%,52.81,38.28%,0.00%,16.72%,12.54%,32.46%,109.34,43.62%,0.00%,18.22%,23.47%,14.69%,150.47
+345,Xylotymbou,Ayia Marina,T,H,108.07,33.73122351,35.01922678,65.93%,0.00%,21.78%,0.00%,12.29%,109.48,69.73%,0.00%,12.63%,4.22%,13.42%,107.66,73.11%,0.00%,11.31%,3.78%,11.80%,107.08
+346,Xylotymbou,Ayia Marina,T,H,108.07,33.73122351,35.01922678,65.93%,0.00%,21.78%,0.00%,12.29%,109.48,69.73%,0.00%,12.63%,4.22%,13.42%,107.66,73.11%,0.00%,11.31%,3.78%,11.80%,107.08
+347,Xylotymbou,Ayia Marina,T,H,108.07,33.73122351,35.01922678,65.93%,0.00%,21.78%,0.00%,12.29%,109.48,69.73%,0.00%,12.63%,4.22%,13.42%,107.66,73.11%,0.00%,11.31%,3.78%,11.80%,107.08
+348,Xylotymbou,Ayia Marina,T,H,108.07,33.73122351,35.01922678,65.93%,0.00%,21.78%,0.00%,12.29%,109.48,69.73%,0.00%,12.63%,4.22%,13.42%,107.66,73.11%,0.00%,11.31%,3.78%,11.80%,107.08
+340,Pyla,Ampelia tou Hotzia,N,H,82.09,33.7183851,35.00443787,72.82%,0.00%,9.49%,0.49%,17.20%,93.27,56.24%,0.00%,11.30%,0.25%,32.21%,79.58,52.62%,0.00%,10.21%,0.12%,37.05%,73.41
+281,Aradippou,Kameni mantra,Ts,H,127.74,33.60688218,34.95199704,86.48%,0.00%,13.52%,0.00%,0.00%,113.52,72.14%,0.00%,19.96%,7.49%,0.41%,134.53,61.49%,0.00%,18.95%,11.93%,7.63%,135.18
+287,Kalavassos,Plakes,N,R,250.42,33.27692729,34.75206632,0.00%,0.00%,5.45%,94.55%,0.00%,294.55,4.57%,0.00%,6.93%,75.66%,12.84%,245.41,14.17%,0.00%,6.19%,61.59%,18.05%,211.31
+336,Oroklini,Lakkos tis Elias,N,H-R,113.11,33.64035593,34.97485122,27.38%,0.00%,34.52%,0.03%,38.06%,96.51,40.63%,0.00%,21.97%,12.48%,24.92%,122.01,46.14%,0.00%,17.31%,13.35%,23.20%,120.81
+292,Kofinou,Kastres,N,H-R,61.24,33.40374986,34.84094108,13.03%,0.00%,23.62%,0.00%,63.35%,60.27,37.58%,0.00%,10.26%,0.70%,51.47%,60.18,39.74%,0.00%,11.10%,0.44%,48.72%,63.26
+293,Kofinou,Achnari,N,R,76.24,33.37575833,34.83220472,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,63.34%,0.00%,0.00%,0.00%,36.66%,63.34,53.95%,0.00%,5.71%,0.00%,40.33%,65.38
+284,Kalavassos,Kafkalies,N,H,66.98,33.31516606,34.74076105,64.95%,0.00%,0.00%,0.00%,35.05%,64.95,59.46%,0.00%,2.12%,0.09%,38.34%,63.95,55.21%,0.00%,8.21%,0.13%,36.45%,72.03
+285,Kalavassos,Kafkalies,N,H,66.98,33.31516606,34.74076105,64.95%,0.00%,0.00%,0.00%,35.05%,64.95,59.46%,0.00%,2.12%,0.09%,38.34%,63.95,55.21%,0.00%,8.21%,0.13%,36.45%,72.03
+275,Agios Theodoros,Alonia ton Plakon,Ts,R,53.33,33.43401659,34.77515037,40.30%,0.00%,0.00%,0.00%,59.70%,40.30,54.07%,0.00%,4.62%,0.05%,41.26%,63.46,42.86%,0.00%,6.66%,0.02%,50.46%,56.23
+289,Klavdia,Stazousa,N,R,96.83,33.48832103,34.90080957,95.27%,0.00%,0.00%,0.00%,4.73%,95.27,86.47%,0.00%,7.35%,0.01%,6.17%,101.19,78.93%,0.00%,7.47%,0.05%,13.54%,94.03
+276,Anafotia,Kokkines,N,R,109.40,33.46874627,34.82785778,0.00%,0.00%,4.44%,37.58%,57.98%,121.62,0.00%,0.00%,14.04%,26.35%,59.62%,107.11,1.90%,0.00%,13.11%,23.78%,61.20%,99.48
+279,Aradippou,Koukoulas,T,H-R,213.49,33.61058961,34.94133919,0.00%,0.00%,42.01%,57.99%,0.00%,257.99,0.87%,0.00%,34.57%,45.13%,19.43%,205.39,10.39%,0.00%,30.17%,35.45%,23.99%,177.08
+280,Aradippou,Koukoulas,T,H-R,246.26,33.60706962,34.9364973,0.00%,0.00%,32.43%,67.57%,0.00%,267.57,0.10%,0.00%,39.50%,53.63%,6.77%,239.98,0.10%,0.00%,39.05%,51.01%,9.85%,231.22
+283,Dromolaksia,Vyzakia,N,H-R,103.30,33.60181334,34.88749484,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,95.94%,0.00%,4.05%,0.01%,0.00%,104.06,94.16%,0.00%,5.83%,0.01%,0.00%,105.85
+335,Ormideia,Ampeli,T,H,224.72,33.77859444,34.99040247,0.02%,0.00%,46.45%,53.53%,0.00%,253.51,17.31%,0.00%,30.28%,49.28%,3.13%,225.70,29.68%,0.00%,24.23%,38.94%,7.15%,194.96
+407,Dymes,Leivadi,T,R,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+504,Parekklisia (Kellaki),Laksia tis Arkosytzias,N,H,172.37,33.14797012,34.78108695,37.30%,0.00%,14.42%,40.64%,7.64%,188.06,48.05%,0.00%,10.89%,32.54%,8.52%,167.46,55.76%,0.00%,13.22%,26.46%,4.56%,161.58
+931,Prodromi,Kambos,N,H,87.07,32.41106931,35.03968514,70.26%,0.00%,18.95%,0.22%,10.56%,108.84,34.64%,0.00%,18.25%,2.75%,44.35%,79.40,36.19%,0.00%,14.92%,2.31%,46.57%,72.97
+342,Tochni,Laksia tou Chani,N,H-R,67.50,33.3099081,34.79398124,11.88%,0.00%,17.69%,0.00%,70.42%,47.27,57.53%,0.00%,9.41%,0.00%,33.06%,76.36,59.19%,0.00%,9.71%,0.08%,31.02%,78.86
+459,Kolossi,Kafkalla,N,R,109.43,32.94197389,34.66946631,69.01%,0.00%,8.72%,0.00%,22.27%,86.45,35.48%,0.00%,14.66%,18.06%,31.81%,118.96,22.60%,0.00%,17.89%,21.50%,38.01%,122.88
+498,Monagri,Petaliotis Mia,N,R,7.13,32.90529588,34.78788869,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,5.69%,0.00%,94.31%,11.37,0.00%,0.00%,5.01%,0.00%,94.99%,10.03
+531,Sylikou,Laona,N,R,14.69,32.89812201,34.83917319,0.00%,0.00%,2.96%,0.00%,97.04%,5.91,0.00%,0.00%,8.27%,0.00%,91.73%,16.55,1.13%,0.00%,10.24%,0.00%,88.63%,21.61
+358,Agios Theodoros (Soleas),Kampos,N,R,108.26,32.9323233,35.03291723,89.78%,0.00%,10.22%,0.00%,0.00%,110.22,92.79%,0.00%,7.21%,0.00%,0.00%,107.21,92.64%,0.00%,7.36%,0.00%,0.00%,107.36
+399,Anogira,Apikreni,N,H-R,100.68,32.73521903,34.72290925,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,95.57%,0.00%,4.19%,0.00%,0.24%,103.96,92.66%,0.00%,2.71%,0.00%,4.63%,98.08
+495,Limnatis,Mia Kremmos,N,R,28.06,32.93885746,34.78226522,0.00%,0.00%,10.69%,0.00%,89.31%,21.39,3.02%,0.00%,13.72%,0.00%,83.25%,30.47,12.03%,0.00%,10.15%,0.00%,77.82%,32.33
+530,Sykopetra,Kolympia,T,R,120.24,33.10823299,34.87996066,88.51%,0.00%,11.49%,0.00%,0.00%,111.49,79.57%,0.00%,12.71%,7.72%,0.00%,128.15,84.81%,0.00%,9.28%,5.90%,0.00%,121.09
+509,"Platres, Kato",Syrkatis,N,R,45.74,32.81400051,34.87038474,0.00%,0.00%,7.91%,0.08%,92.01%,16.05,36.61%,0.00%,9.80%,0.08%,53.50%,56.46,49.71%,0.00%,7.38%,0.08%,42.83%,64.72
+356,Agios Konstantinos,Miliaris-Vikla,N,R,109.20,33.083702,34.874114,87.62%,0.00%,12.38%,0.00%,0.00%,112.38,91.19%,0.00%,8.81%,0.00%,0.00%,108.81,93.59%,0.00%,6.41%,0.00%,0.00%,106.41
+341,Skarinou,Skopelos,T,H-R,76.24,33.37396062,34.81642981,85.02%,0.00%,7.96%,0.65%,6.37%,102.89,39.66%,0.00%,8.13%,1.69%,50.52%,60.98,40.41%,0.00%,8.60%,2.41%,48.58%,64.84
+496,Monagri,Amaksimata,T,H-R,23.08,32.91590512,34.80646332,0.00%,0.00%,8.61%,0.00%,91.39%,17.22,0.00%,0.00%,13.02%,0.00%,86.98%,26.04,0.00%,0.00%,11.48%,1.00%,87.52%,25.97
+497,Monagri,Amaksimata,T,H-R,23.08,32.91590512,34.80646332,0.00%,0.00%,8.61%,0.00%,91.39%,17.22,0.00%,0.00%,13.02%,0.00%,86.98%,26.04,0.00%,0.00%,11.48%,1.00%,87.52%,25.97
+524,Polemidia (Kato),Tzilalaoura,T,R,96.14,33.00357,34.69705269,0.00%,0.00%,34.33%,0.00%,65.67%,68.65,3.95%,0.00%,21.40%,12.04%,62.61%,82.87,2.31%,0.00%,29.26%,25.35%,43.08%,136.89
+525,Polemidia (Kato),Tzilalaoura,T,R,96.14,33.00357,34.69705269,0.00%,0.00%,34.33%,0.00%,65.67%,68.65,3.95%,0.00%,21.40%,12.04%,62.61%,82.87,2.31%,0.00%,29.26%,25.35%,43.08%,136.89
+456,Khandria,Domes,T,R,123.65,32.99050669,34.94490654,79.05%,0.00%,18.52%,2.43%,0.00%,123.38,79.38%,0.00%,15.67%,4.95%,0.00%,125.57,79.65%,0.00%,14.99%,4.12%,1.23%,122.01
+457,Khandria,Domes,T,R,123.65,32.99050669,34.94490654,79.05%,0.00%,18.52%,2.43%,0.00%,123.38,79.38%,0.00%,15.67%,4.95%,0.00%,125.57,79.65%,0.00%,14.99%,4.12%,1.23%,122.01
+510,"Platres, Kato",Arkatzin tou Vathkia,T,R,110.63,32.82001937,34.87552114,83.43%,0.00%,16.09%,0.47%,0.00%,117.04,91.38%,0.00%,8.40%,0.22%,0.00%,108.84,89.12%,0.00%,8.23%,0.14%,2.51%,106.01
+406,Dierona,Kampos,N,R,112.49,33.12525911,34.82168777,86.48%,0.00%,13.52%,0.00%,0.00%,113.52,86.26%,0.00%,13.74%,0.00%,0.00%,113.74,89.80%,0.00%,10.19%,0.01%,0.00%,110.20
+405,Apsiou,Gerampelouthkia,N,R,113.47,33.02096895,34.78965156,83.87%,0.00%,16.13%,0.00%,0.00%,116.13,85.31%,0.00%,14.69%,0.00%,0.00%,114.69,82.51%,0.00%,13.52%,0.02%,3.95%,109.60
+404,Avdimou,Psararis,T,H,63.93,32.76161982,34.68922075,5.71%,0.00%,20.42%,2.90%,70.97%,55.25,22.85%,0.00%,14.62%,3.73%,58.81%,63.27,34.04%,0.00%,12.08%,5.02%,48.86%,73.26
+500,Moniatis,Saittas(Kattes),Ν,R,234.47,32.90978566,34.86183005,25.44%,0.00%,5.16%,69.40%,0.00%,243.97,11.88%,0.00%,19.66%,66.09%,2.37%,249.47,15.42%,0.00%,18.99%,52.19%,13.39%,209.98
+503,Paramytha,Kolympoi,N,H,12.85,32.97944951,34.75972411,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,1.60%,0.00%,6.60%,0.00%,91.80%,14.80,3.91%,0.00%,9.39%,0.36%,86.34%,23.76
+403,Avdimou,Mantri (Mantres),N,R,31.69,32.77433268,34.66499016,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,32.06%,0.00%,4.82%,0.00%,63.12%,41.69,43.78%,0.00%,4.80%,0.01%,51.42%,53.39
+527,Prasteio,Kato Trimithoudin,N,R,59.34,32.78384936,34.72761185,50.89%,0.00%,0.00%,0.00%,49.11%,50.89,46.91%,0.00%,2.48%,0.51%,50.10%,53.39,40.20%,0.00%,8.88%,5.26%,45.66%,73.73
+775,Mandria,Kambos tou Loutra,N,H,110.97,32.53205826,34.70580821,74.85%,0.00%,14.33%,2.51%,8.31%,111.03,66.35%,0.00%,16.10%,3.03%,14.53%,107.63,63.57%,0.00%,16.71%,5.75%,13.97%,114.24
+564,Astromeritis,Potamoi (Trimmatos),N,H-R,230.18,33.04532753,35.13931479,0.00%,0.00%,22.09%,77.91%,0.00%,277.91,5.39%,0.00%,21.49%,59.57%,13.55%,227.07,19.26%,0.00%,17.22%,43.95%,19.57%,185.56
+565,Astromeritis,Potamoi (Trimmatos),N,H-R,230.18,33.04532753,35.13931479,0.00%,0.00%,22.09%,77.91%,0.00%,277.91,5.39%,0.00%,21.49%,59.57%,13.55%,227.07,19.26%,0.00%,17.22%,43.95%,19.57%,185.56
+573,Dali,Kokkines,N,R,14.33,33.40301397,35.03394372,0.00%,0.00%,8.27%,0.00%,91.73%,16.54,0.00%,0.00%,5.91%,0.00%,94.09%,11.82,0.00%,0.00%,7.31%,0.00%,92.69%,14.62
+575,Dali,Lemonoudi,Ts,R,0.00,,,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00
+574,Dali,Aetomoutti,Ts,R,87.39,33.4057864,35.06239123,86.77%,0.00%,0.00%,0.00%,13.23%,86.77,82.08%,0.00%,5.39%,0.01%,12.52%,92.88,56.29%,0.00%,11.47%,1.10%,31.14%,82.53
+671,Nisou,Maria Moutti,N,R,62.26,33.38474228,35.02778847,0.00%,0.00%,17.39%,3.49%,79.12%,45.26,33.17%,0.00%,14.59%,2.77%,49.47%,70.66,36.20%,0.00%,13.51%,2.55%,47.75%,70.85
+687,Potamia,Diplopotamon,N,H-R,5.05,33.45839068,35.06517867,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,3.35%,0.00%,96.65%,6.70,0.00%,0.00%,4.22%,0.00%,95.78%,8.44
+686,Potamia,Ambelin,N,H,4.50,33.44775244,35.0548443,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.08%,0.00%,0.00%,0.00%,99.92%,0.08,5.38%,0.00%,3.93%,0.07%,90.62%,13.43
+685,Potamia,Fourkismenos,N,R,13.20,33.43124954,35.04548917,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,8.81%,0.00%,6.67%,0.00%,84.53%,22.14,4.89%,0.00%,6.21%,0.06%,88.85%,17.47
+552,Agios Sozomenos,Vamos,N,H-R,15.47,33.43610839,35.06225464,0.00%,0.00%,8.29%,0.00%,91.71%,16.58,0.00%,0.00%,5.28%,0.01%,94.71%,10.58,0.00%,0.00%,8.91%,0.48%,90.61%,19.25
+553,Agios Sozomenos,Halasmata,N,H,14.81,33.45519575,35.0914469,0.00%,0.00%,9.12%,0.00%,90.88%,18.25,0.00%,0.00%,7.65%,0.00%,92.35%,15.30,0.00%,0.00%,5.44%,0.00%,94.56%,10.88
+554,Agios Sozomenos,Halasmata,N,H,14.81,33.45519575,35.0914469,0.00%,0.00%,9.12%,0.00%,90.88%,18.25,0.00%,0.00%,7.65%,0.00%,92.35%,15.30,0.00%,0.00%,5.44%,0.00%,94.56%,10.88
+555,Agios Sozomenos,Halasmata,N,H,14.81,33.45519575,35.0914469,0.00%,0.00%,9.12%,0.00%,90.88%,18.25,0.00%,0.00%,7.65%,0.00%,92.35%,15.30,0.00%,0.00%,5.44%,0.00%,94.56%,10.88
+556,Agios Sozomenos,Choupan Tèpe,N,H-R,25.95,33.44867752,35.07811841,0.00%,0.00%,10.79%,2.54%,86.67%,29.19,0.00%,0.00%,13.53%,0.46%,86.01%,28.45,0.00%,0.00%,8.81%,0.86%,90.33%,20.21
+548,Agia Marina (Xyliatou),Tholos,Τ,R,52.80,33.04665556,35.05291445,55.81%,0.00%,0.00%,0.00%,44.19%,55.81,39.70%,0.00%,8.27%,0.00%,52.03%,56.25,28.59%,0.00%,8.21%,0.45%,62.75%,46.35
+689,Pyroi,Kastros,N,H,16.08,33.47569182,35.06761867,0.00%,0.00%,4.03%,0.00%,95.97%,8.06,0.00%,0.00%,10.22%,0.00%,89.78%,20.44,3.61%,0.00%,7.92%,0.09%,88.37%,19.74
+690,Pyroi,Ayios Yeoryios,N,H-R,75.93,33.47337978,35.0777002,88.11%,0.00%,8.76%,0.00%,3.13%,105.63,58.89%,0.00%,5.06%,0.00%,36.05%,69.02,44.38%,0.00%,4.38%,0.00%,51.24%,53.13
+691,Pyroi,Ayios Yeoryios,N,H-R,75.93,33.47337978,35.0777002,88.11%,0.00%,8.76%,0.00%,3.13%,105.63,58.89%,0.00%,5.06%,0.00%,36.05%,69.02,44.38%,0.00%,4.38%,0.00%,51.24%,53.13
+692,Pyroi,Chalasmata,N,H,71.93,33.46346552,35.09795694,92.22%,0.00%,5.73%,0.00%,2.05%,103.67,57.96%,0.00%,4.24%,0.00%,37.81%,66.43,35.52%,0.00%,5.08%,0.00%,59.40%,45.68
+605,Geri/Yeri,Khalasmata,N,H,11.31,33.45817229,35.09821405,0.00%,0.00%,3.56%,0.00%,96.44%,7.13,0.00%,0.00%,4.26%,0.00%,95.74%,8.52,9.43%,0.00%,4.43%,0.00%,86.14%,18.29
+606,Geri/Yeri,Khalasmata,N,H,11.31,33.45817229,35.09821405,0.00%,0.00%,3.56%,0.00%,96.44%,7.13,0.00%,0.00%,4.26%,0.00%,95.74%,8.52,9.43%,0.00%,4.43%,0.00%,86.14%,18.29
+607,Geri/Yeri,Khalasmata,N,H,11.31,33.45817229,35.09821405,0.00%,0.00%,3.56%,0.00%,96.44%,7.13,0.00%,0.00%,4.26%,0.00%,95.74%,8.52,9.43%,0.00%,4.43%,0.00%,86.14%,18.29
+694,Shia,Anoyia,T,R,14.01,33.37125538,34.95919676,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.73%,0.00%,7.02%,0.00%,92.25%,14.77,14.78%,0.00%,6.24%,0.00%,78.98%,27.26
+579,Evrichou,Pano Atsias (Panatsios),N,R,74.70,32.93293033,35.06994348,62.63%,0.00%,25.66%,0.00%,11.71%,113.95,36.21%,0.00%,8.81%,0.32%,54.66%,54.79,44.80%,0.00%,5.09%,0.13%,49.98%,55.37
+657,Mathiatis,Kokkinantonis,T,H,66.51,33.34643659,34.9786401,62.92%,0.00%,13.06%,0.00%,24.02%,89.04,43.61%,0.00%,7.92%,0.00%,48.47%,59.45,39.01%,0.00%,6.01%,0.00%,54.98%,51.03
+623,Klirou,Pervolia kai Diplargaka,N,R,32.64,33.17400004,35.02863406,0.00%,0.00%,2.18%,0.00%,97.82%,4.37,0.23%,0.00%,9.57%,4.15%,86.04%,31.84,2.11%,0.00%,12.66%,11.43%,73.80%,61.72
+658,Mathiatis,Kokkines,N,R,56.83,33.34461811,34.97721412,45.85%,0.00%,10.88%,0.00%,43.27%,67.60,37.21%,0.00%,9.18%,0.00%,53.60%,55.58,33.94%,0.00%,6.69%,0.00%,59.38%,47.31
+661,Menoiko,Elies,N,R,53.27,33.15903853,35.10546342,32.62%,0.00%,18.12%,0.00%,49.26%,68.86,31.08%,0.00%,10.97%,0.07%,57.89%,53.21,17.32%,0.00%,10.11%,0.06%,72.51%,37.73
+684,Politiko,Ayios Mnason,N,H,42.91,33.23467062,35.02992688,3.75%,0.00%,17.13%,0.00%,79.12%,38.01,15.80%,0.00%,15.95%,0.00%,68.25%,47.70,10.35%,0.00%,12.13%,2.80%,74.72%,43.01
+578,Evrichou,Atsas,N,H,75.00,32.91726516,35.06667377,73.49%,0.00%,8.74%,0.00%,17.77%,90.97,48.08%,0.00%,7.59%,0.00%,44.32%,63.27,60.37%,0.00%,5.18%,0.01%,34.43%,70.77
+551,Agios Ioannis (Malountas),Moutti tou melissiou,N,R,6.23,33.18108387,35.08139933,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,3.19%,0.00%,96.81%,6.39,2.15%,0.00%,5.08%,0.00%,92.77%,12.31
+550,Agios Ioannis (Malountas),Pallouroudin,N,H-R,9.89,33.16933644,35.08127081,0.00%,0.00%,2.31%,0.00%,97.69%,4.62,0.00%,0.00%,7.25%,0.00%,92.75%,14.49,0.00%,0.00%,5.29%,0.00%,94.71%,10.57
+696,Agia Varvara,Asproyes,N,H,35.64,32.51705994,34.75302554,0.00%,0.00%,15.29%,0.00%,84.71%,30.58,6.11%,0.00%,10.03%,0.00%,83.85%,26.18,23.37%,0.00%,10.27%,2.09%,64.28%,50.16
+697,Agia Varvara,Asproyes,N,H,35.64,32.51705994,34.75302554,0.00%,0.00%,15.29%,0.00%,84.71%,30.58,6.11%,0.00%,10.03%,0.00%,83.85%,26.18,23.37%,0.00%,10.27%,2.09%,64.28%,50.16
+700,Agia Varvara,Neon Chorio,N,R,1.35,32.50704194,34.76335081,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,2.02%,0.00%,97.98%,4.04
+698,Agia Varvara,Kaminia,N,R,27.04,32.51923516,34.7520952,0.00%,0.00%,11.20%,0.00%,88.80%,22.41,0.00%,0.00%,9.50%,0.00%,90.50%,19.00,7.86%,0.00%,9.51%,4.28%,78.35%,39.72
+699,Agia Varvara,Melisies,N,H-R,79.72,32.51503914,34.74905325,0.00%,0.00%,0.19%,10.62%,89.20%,32.22,0.61%,0.00%,17.07%,21.85%,60.48%,100.28,6.11%,0.00%,16.85%,22.28%,54.76%,106.66
+702,Agia Marinouda,Kafkalla,N,H-R,39.12,32.47481281,34.75427003,0.00%,0.00%,18.59%,0.00%,81.41%,37.17,1.09%,0.00%,16.06%,0.00%,82.85%,33.22,8.47%,0.00%,18.95%,0.21%,72.38%,46.98
+710,Anarita,Kafkarouda,N,R,72.27,32.55124842,34.72914911,65.81%,0.00%,8.91%,0.00%,25.29%,83.62,52.49%,0.00%,5.79%,0.23%,41.49%,64.76,49.58%,0.00%,5.11%,2.87%,42.43%,68.43
+711,Anarita,Monokokkalos,N,H-R,105.44,32.52549675,34.73274279,58.42%,0.00%,23.41%,0.00%,18.17%,105.24,59.95%,0.00%,21.88%,0.06%,18.12%,103.88,71.55%,0.00%,17.69%,0.09%,10.68%,107.19
+725,Axylou (Episkopi),Moutti tou Ayio Epfaneiou,N,R,28.91,32.54443077,34.79823776,0.00%,0.00%,22.58%,0.00%,77.42%,45.17,0.00%,0.00%,12.68%,0.00%,87.32%,25.36,0.18%,0.00%,8.01%,0.00%,91.82%,16.19
+707,Acheleia,Ayios Leontios,N,H-R,37.61,32.47116554,34.72099908,0.00%,0.00%,24.97%,0.00%,75.03%,49.94,9.50%,0.00%,11.63%,0.02%,78.85%,32.81,12.30%,0.00%,7.58%,0.88%,79.25%,30.08
+746,Episkopi,Teratsia tou Kosta,N,H-R,41.92,32.52084887,34.79065017,1.38%,0.00%,22.41%,1.45%,74.75%,50.56,8.39%,0.00%,14.29%,0.67%,76.65%,38.97,7.75%,0.00%,12.26%,1.32%,78.67%,36.22
+774,Makounta,Karydi,N,H,24.17,32.47993008,35.04352521,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,1.70%,5.12%,93.18%,18.76,0.06%,0.00%,4.49%,14.91%,80.55%,53.76
+776,Mesa Chorio,Tzelarotsos,N,H-R,43.70,32.46232609,34.81274055,0.00%,0.00%,8.57%,0.00%,91.43%,17.14,0.00%,0.00%,14.65%,5.38%,79.97%,45.44,0.00%,0.00%,19.55%,9.80%,70.64%,68.52
+784,Neo Chorio,Anatoliki,N,H,36.81,32.38783444,35.03583109,0.00%,0.00%,10.26%,0.00%,89.74%,20.52,17.49%,0.00%,10.82%,0.07%,71.63%,39.33,18.72%,0.00%,14.04%,1.26%,65.98%,50.59
+786,Neo Chorio,Agnades,N,H,169.91,32.36198787,35.03146349,45.90%,0.00%,18.39%,33.63%,2.08%,183.56,44.38%,0.00%,17.47%,30.35%,7.80%,170.36,52.97%,0.00%,15.01%,24.28%,7.74%,155.81
+787,Neo Chorio,Ayios Kononas/Kashia tous lakkous,N,R,116.68,32.29311009,35.04927794,71.55%,0.00%,27.59%,0.86%,0.00%,129.31,89.03%,0.00%,10.46%,0.51%,0.00%,111.48,90.92%,0.00%,8.90%,0.18%,0.00%,109.26
+788,Nikokleia,Teratsies tou Skarnou,N,H-R,15.39,32.57680698,34.73727712,0.00%,0.00%,4.23%,0.00%,95.77%,8.46,2.49%,0.00%,5.86%,0.17%,91.49%,14.70,13.74%,0.00%,4.03%,0.41%,81.82%,23.02
+923,Poli Chrysochous,Schinies,N,H,13.43,32.45161808,35.04105615,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,7.70%,0.00%,92.30%,15.40,8.83%,0.00%,7.99%,0.02%,83.16%,24.88
+924,Poli Chrysochous,Koliotrypes,N,H,13.67,32.45095334,35.02975641,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,5.23%,0.00%,6.04%,0.60%,88.14%,19.09,6.65%,0.00%,7.32%,0.21%,85.82%,21.91
+925,Poli Chrysochous,Agia Varvara,N,R,26.63,32.43438884,35.02540545,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,8.59%,7.20%,84.21%,38.79,5.22%,0.00%,10.35%,5.06%,79.37%,41.10
+926,Poli Chrysochous,Agia Varvara,N,R,26.63,32.43438884,35.02540545,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,8.59%,7.20%,84.21%,38.79,5.22%,0.00%,10.35%,5.06%,79.37%,41.10
+892,Pelathousa,Limni,N,H,229.27,32.48644649,35.03686415,0.00%,0.00%,0.00%,100.00%,0.00%,300.00,0.00%,0.00%,3.04%,74.68%,22.27%,230.14,0.00%,0.00%,6.83%,48.00%,45.17%,157.66
+893,Pelathousa,Limni,N,H,229.27,32.48644649,35.03686415,0.00%,0.00%,0.00%,100.00%,0.00%,300.00,0.00%,0.00%,3.04%,74.68%,22.27%,230.14,0.00%,0.00%,6.83%,48.00%,45.17%,157.66
+894,Pelathousa,Limni-Athkiatzia,N,H,41.75,32.48871928,35.03280012,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,3.22%,14.87%,81.91%,51.04,0.00%,0.00%,7.45%,19.77%,72.78%,74.21
+895,Pelathousa,Orniatis (Omiatis),Ts,R,15.00,32.47490517,35.04056881,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,1.19%,98.81%,3.58,0.00%,0.00%,1.98%,12.49%,85.53%,41.42
+927,Pomos,Agiolites,T,H,80.80,32.53079408,35.14239871,58.65%,0.00%,16.23%,0.00%,25.12%,91.10,44.22%,0.00%,17.06%,0.06%,38.67%,78.51,44.44%,0.00%,13.75%,0.29%,41.52%,72.80
+928,Pomos,Agiolites,T,H,80.80,32.53079408,35.14239871,58.65%,0.00%,16.23%,0.00%,25.12%,91.10,44.22%,0.00%,17.06%,0.06%,38.67%,78.51,44.44%,0.00%,13.75%,0.29%,41.52%,72.80
+929,Pomos,Agiolites,T,H,80.80,32.53079408,35.14239871,58.65%,0.00%,16.23%,0.00%,25.12%,91.10,44.22%,0.00%,17.06%,0.06%,38.67%,78.51,44.44%,0.00%,13.75%,0.29%,41.52%,72.80
+934,Souskiou,Stalies,N,H-R,94.42,32.59918581,34.72077555,80.49%,0.00%,7.69%,0.71%,11.11%,98.00,65.77%,0.00%,10.96%,1.15%,22.12%,91.14,74.40%,0.00%,9.08%,0.52%,16.00%,94.12
+933,Souskiou,Plakota,N,R,16.98,32.59484278,34.73504809,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,16.39%,0.00%,3.78%,0.00%,79.83%,23.94,20.80%,0.00%,3.10%,0.00%,76.10%,27.00
+936,Steni,Kapsala,T,R,28.84,32.47220681,34.99262226,0.00%,0.00%,14.18%,0.00%,85.82%,28.36,0.00%,0.00%,10.96%,0.74%,88.29%,24.16,0.00%,0.00%,11.07%,3.95%,84.97%,34.01
+940,Tsada,Skoutellin,N,R,73.25,32.50569311,34.81744857,0.00%,0.00%,6.60%,20.97%,72.43%,76.11,1.15%,0.00%,11.11%,20.55%,67.19%,85.01,0.73%,0.00%,11.44%,11.67%,76.16%,58.62
+939,Timi,Vounaros,N,H-R,62.66,32.50833668,34.71086945,0.00%,0.00%,28.02%,0.29%,71.69%,56.90,24.83%,0.00%,18.34%,0.13%,56.70%,61.91,34.89%,0.00%,15.78%,0.91%,48.42%,69.18
+938,Timi,Stillarka,N,R,83.75,32.51191444,34.7098436,94.92%,0.00%,4.99%,0.00%,0.08%,104.91,45.46%,0.00%,16.54%,0.35%,37.65%,79.59,37.47%,0.00%,14.17%,0.31%,48.05%,66.74
+748,Foinikas,Vasilina,N,R,19.17,32.56726688,34.73662539,28.61%,0.00%,0.00%,0.00%,71.39%,28.61,20.62%,0.00%,0.00%,0.00%,79.38%,20.62,7.29%,0.00%,0.49%,0.00%,92.22%,8.27
+734,Chrysochou,Alonia,N,H-R,15.90,32.43930574,35.00909262,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,9.39%,0.00%,90.61%,18.77,0.90%,0.00%,10.94%,2.05%,86.11%,28.94
+733,Chrysochou,Kokkinoyia,N,H-R,27.57,32.44265092,35.01033225,0.00%,0.00%,20.37%,0.00%,79.63%,40.74,3.99%,0.00%,8.09%,0.13%,87.79%,20.56,6.26%,0.00%,7.45%,0.08%,86.21%,21.41
+731,Chloraka,Kampos,N,H-R,106.19,32.4057525,34.79388307,23.66%,0.00%,23.65%,0.00%,52.68%,70.97,11.55%,0.00%,23.25%,13.98%,51.22%,99.99,5.41%,0.00%,27.26%,29.22%,38.10%,147.60
+727,Chloraka,Vrisouthkia,N,H,206.43,32.4015505,34.80340064,0.00%,0.00%,29.25%,70.75%,0.00%,270.75,5.56%,0.00%,29.01%,40.69%,24.73%,185.66,12.40%,0.00%,27.78%,31.64%,28.19%,162.87
+728,Chloraka,Kinodries,N,H-R,222.20,32.4174692,34.79056045,0.51%,0.00%,35.64%,56.62%,7.23%,241.64,2.01%,0.00%,34.89%,49.24%,13.85%,219.52,5.56%,0.00%,31.46%,45.66%,17.33%,205.45
+544,Agios Epifaneios (Soleas),Gerontas,N,R,99.77,32.870418,35.0749567,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,94.67%,0.00%,3.89%,0.01%,1.42%,102.49,88.77%,0.00%,4.00%,0.01%,7.22%,96.81
+557,Akaki,Halopetra,N,H-R,21.90,33.14465534,35.15328526,0.00%,0.00%,14.13%,0.00%,85.87%,28.25,0.39%,0.00%,7.86%,0.16%,91.59%,16.60,0.15%,0.00%,8.99%,0.91%,89.96%,20.84
+562,Arediou,Kokkini,N,H,58.32,33.18666303,35.04930532,15.98%,0.00%,21.48%,0.00%,62.55%,58.93,39.82%,0.00%,13.41%,0.00%,46.78%,66.63,22.23%,0.00%,11.51%,1.38%,64.87%,49.41
+563,Arediou,Kokkini,N,H,58.32,33.18666303,35.04930532,15.98%,0.00%,21.48%,0.00%,62.55%,58.93,39.82%,0.00%,13.41%,0.00%,46.78%,66.63,22.23%,0.00%,11.51%,1.38%,64.87%,49.41
+608,Geri/Yeri,Koutsopetrika,N,R,48.92,33.40051016,35.10098759,1.60%,0.00%,25.95%,0.00%,72.46%,53.49,1.14%,0.00%,22.53%,0.00%,76.33%,46.20,2.29%,0.00%,22.38%,0.00%,75.33%,47.06
+576,Deneia,Kafkalla,Ts,R,126.11,33.14230471,35.16531816,69.92%,0.00%,13.17%,16.90%,0.00%,146.97,51.63%,0.00%,18.58%,13.23%,16.55%,128.50,41.92%,0.00%,14.73%,10.50%,32.85%,102.87
+610,Kalopanayiotis,Dikhoritissa,Ts,H,101.60,32.81930322,35.03408104,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,93.51%,0.00%,6.46%,0.00%,0.03%,106.44,87.09%,0.00%,5.64%,0.00%,7.27%,98.37
+611,Kampos,Pentakallis (Pendakalles),T,H-R,100.00,32.78269217,35.07538733,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00
+634,Lakatameia (Kato),Kafkalla tis Mantras (tou kara Dimitri),N,R,33.55,33.34444256,35.09387477,16.42%,0.00%,17.90%,0.29%,65.39%,53.09,5.09%,0.00%,8.68%,0.03%,86.20%,22.55,3.92%,0.00%,10.33%,0.14%,85.60%,25.01
+688,Pyrgos (Kato),Solomos,T,R,47.97,32.67300322,35.1689892,27.57%,0.00%,16.86%,0.00%,55.57%,61.29,24.43%,0.00%,10.24%,0.14%,65.19%,45.33,16.58%,0.00%,10.22%,0.09%,73.11%,37.29
+679,Pigenia,Spiladia,T,H,69.36,32.6578834,35.16515949,23.65%,0.00%,16.32%,0.00%,60.03%,56.29,41.17%,0.00%,8.18%,5.60%,45.05%,74.32,39.49%,0.00%,8.47%,7.01%,45.03%,77.47
+659,Mansoura,Ayios Theodoros,N,R,56.89,32.63918582,35.18952267,3.12%,0.00%,37.82%,10.20%,48.87%,109.35,12.35%,0.00%,9.35%,1.57%,76.73%,35.76,8.31%,0.00%,6.96%,1.12%,83.62%,25.57
+636,Lefkosia,,T,H-R,31.49,33.43232513,35.18429739,0.00%,0.00%,10.42%,0.00%,89.58%,20.85,0.00%,0.00%,3.24%,2.59%,94.17%,14.25,0.00%,0.00%,2.37%,18.21%,79.42%,59.38
+609,Kakopetria,,Ts,H,176.69,32.9040317,34.9910805,0.00%,0.00%,47.42%,49.95%,2.63%,244.69,0.03%,0.00%,33.22%,32.19%,34.56%,163.04,6.12%,0.00%,24.22%,22.60%,47.07%,122.35
+624,Klirou,,N,R,178.77,33.17718663,35.02330874,0.00%,0.00%,32.90%,59.05%,8.05%,242.96,3.23%,0.00%,25.33%,38.01%,33.42%,167.94,2.53%,0.00%,19.75%,27.79%,49.93%,125.40
+274,Agios Theodoros,Kaminia,T,H,73.69,33.38365704,34.81203156,75.48%,0.00%,8.61%,0.00%,15.92%,92.69,48.87%,0.00%,7.64%,0.00%,43.49%,64.15,43.02%,0.00%,9.88%,0.48%,46.61%,64.24
+286,Kalavassos,Gyrtomilos,T,R,63.58,33.2862955,34.7868717,59.82%,0.00%,8.06%,0.00%,32.12%,75.94,29.46%,0.00%,14.98%,0.33%,55.23%,60.40,31.01%,0.00%,11.23%,0.32%,57.45%,54.41
+357,Agios Theodoros (Agrou),,T,R,173.60,33.03375605,34.89434137,12.00%,0.00%,39.30%,48.70%,0.00%,236.70,62.51%,0.00%,21.63%,15.86%,0.00%,153.35,75.94%,0.00%,17.39%,6.68%,0.00%,130.74
+390,Agros,Vrysia-Aloni,T,R,220.78,33.01579964,34.91661748,0.00%,0.00%,21.42%,78.58%,0.00%,278.58,29.94%,0.00%,25.51%,44.56%,0.00%,214.62,54.71%,0.00%,21.46%,23.84%,0.00%,169.13
+391,Agros,Vrysia-Aloni,T,R,220.78,33.01579964,34.91661748,0.00%,0.00%,21.42%,78.58%,0.00%,278.58,29.94%,0.00%,25.51%,44.56%,0.00%,214.62,54.71%,0.00%,21.46%,23.84%,0.00%,169.13
+396,Apeshia,,N,R,61.84,32.97872653,34.78756082,0.00%,0.00%,11.79%,4.43%,83.78%,36.88,0.05%,0.00%,18.16%,17.78%,64.01%,89.72,0.48%,0.00%,15.13%,9.40%,75.00%,58.92
+402,Avdimou,Trapezomata,Τ,H-R,39.48,32.76749539,34.6930402,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,6.98%,0.00%,14.42%,4.70%,73.90%,49.93,22.11%,0.00%,12.95%,6.84%,58.11%,68.52
+534,Vasa,Gouppi,T,R,69.06,32.79062089,34.82960549,22.24%,0.00%,12.30%,2.97%,62.50%,55.74,18.98%,0.00%,17.64%,8.71%,54.67%,80.38,11.95%,0.00%,19.79%,6.51%,61.76%,71.05
+535,Vasa,Kampi,T,R,78.67,32.79332503,34.83103032,19.22%,0.00%,19.74%,4.26%,56.78%,71.47,8.10%,0.00%,24.01%,12.37%,55.52%,93.24,11.45%,0.00%,19.56%,6.91%,62.08%,71.29
+452,Germasoyeia,Paniotis,Τ,R,248.14,33.07795913,34.7167687,0.00%,0.00%,33.76%,66.24%,0.00%,266.24,3.43%,0.00%,30.61%,65.93%,0.03%,262.45,21.41%,0.00%,25.62%,47.70%,5.28%,215.74
+453,Kantou,Anatolia,T,H-R,91.30,32.91342917,34.69217257,77.97%,0.00%,10.14%,0.00%,11.90%,98.24,35.53%,0.00%,20.31%,4.15%,40.01%,88.60,29.46%,0.00%,17.87%,7.28%,45.38%,87.06
+454,Kantou,Kokkinospilios,T,R,102.25,32.90624783,34.71041876,86.65%,0.00%,13.35%,0.00%,0.00%,113.35,92.76%,0.00%,4.03%,0.00%,3.20%,100.83,79.94%,0.00%,6.32%,0.00%,13.74%,92.58
+455,Kantou,Kokkinospilios,T,R,102.25,32.90624783,34.71041876,86.65%,0.00%,13.35%,0.00%,0.00%,113.35,92.76%,0.00%,4.03%,0.00%,3.20%,100.83,79.94%,0.00%,6.32%,0.00%,13.74%,92.58
+458,Kolossi,Pampoula,T,H,204.66,32.92033802,34.67596598,0.00%,0.00%,34.69%,57.38%,7.93%,241.51,0.00%,0.00%,32.98%,49.40%,17.63%,214.14,0.99%,0.00%,25.73%,35.29%,37.99%,158.32
+460,Korphi,,T,R,124.40,32.96472198,34.79527794,0.00%,0.00%,32.11%,57.76%,10.12%,237.52,0.14%,0.00%,23.20%,13.85%,62.81%,88.08,5.81%,0.00%,13.58%,4.87%,75.74%,47.59
+462,Kyperounta,Panayia,T,R,87.43,32.97123243,34.9424148,0.00%,0.00%,18.87%,2.11%,79.02%,44.06,0.03%,0.00%,29.12%,19.11%,51.74%,115.61,1.30%,0.00%,26.41%,16.17%,56.12%,102.63
+501,Palodhia,,T,H-R,78.91,32.98879443,34.7386499,0.00%,0.00%,45.25%,9.56%,45.19%,119.18,7.67%,0.00%,20.47%,1.53%,70.32%,53.21,31.93%,0.00%,15.39%,0.54%,52.14%,64.34
+502,Palodhia,"Between localities Laksia tou Makronou (N), Kserokoiladia (S), Kountouros (E)",T,R,100.11,32.98225263,34.73733931,98.85%,0.00%,1.15%,0.00%,0.00%,101.15,93.94%,0.00%,3.65%,0.00%,2.41%,101.23,76.88%,0.00%,9.95%,0.39%,12.78%,97.95
+512,Polemidia,Skasmata,T,H,170.76,33.01240653,34.69183715,0.00%,0.00%,39.00%,25.91%,35.09%,155.72,3.01%,0.00%,54.40%,19.95%,22.64%,171.66,1.61%,0.00%,48.21%,28.95%,21.23%,184.89
+513,Polemidia,Skasmata,T,H,170.76,33.01240653,34.69183715,0.00%,0.00%,39.00%,25.91%,35.09%,155.72,3.01%,0.00%,54.40%,19.95%,22.64%,171.66,1.61%,0.00%,48.21%,28.95%,21.23%,184.89
+526,Potamiou,,Ts,R,101.22,32.806667,34.823889,0.00%,0.00%,45.84%,39.55%,14.61%,210.33,1.62%,0.00%,17.36%,6.56%,74.47%,56.01,5.42%,0.00%,12.52%,2.28%,79.77%,37.32
+528,Spitali,,N,R,43.48,33.00854146,34.76313816,0.00%,0.00%,14.84%,0.53%,84.64%,31.26,1.44%,0.00%,12.15%,8.23%,78.18%,50.44,3.00%,0.00%,13.17%,6.47%,77.37%,48.74
+538,Ypsonas,Skotomenos,T,H,220.84,32.95269835,34.69225936,0.00%,0.00%,33.43%,66.36%,0.21%,265.94,0.00%,0.00%,29.26%,51.65%,19.09%,213.48,0.04%,0.00%,26.83%,43.13%,30.00%,183.09
+539,Ypsonas,Kladeri,T,H-R,258.74,32.9675977,34.68882255,0.00%,0.00%,42.21%,57.79%,0.00%,257.79,0.00%,0.00%,37.60%,62.40%,0.00%,262.40,0.00%,0.00%,37.73%,60.19%,2.08%,256.02
+540,Ypsonas,Kladeri,T,H-R,258.74,32.9675977,34.68882255,0.00%,0.00%,42.21%,57.79%,0.00%,257.79,0.00%,0.00%,37.60%,62.40%,0.00%,262.40,0.00%,0.00%,37.73%,60.19%,2.08%,256.02
+536,Ypsonas,Choliasmeni,T,H,84.78,32.9434864,34.69249602,0.00%,0.00%,14.44%,0.00%,85.56%,28.88,1.44%,0.00%,26.61%,14.88%,57.07%,99.31,0.66%,0.00%,29.23%,22.34%,47.77%,126.14
+505,Phasoula,Agios Riginos,N,R,164.03,33.026889,34.761529,0.00%,0.00%,25.11%,58.40%,16.49%,225.41,8.01%,0.00%,25.30%,34.17%,32.52%,161.13,21.01%,0.00%,21.04%,14.16%,43.80%,105.55
+545,Agios Theodoros/Mansoura,Spilios tou Listi,N,H-R,15.55,32.64123025,35.18958072,0.00%,0.00%,0.46%,0.05%,99.49%,1.08,3.94%,0.00%,7.48%,1.28%,87.30%,22.75,6.76%,0.00%,6.61%,0.95%,85.69%,22.81
+546,Agios Theodoros/Mansoura,Spilios tou Listi,N,H-R,15.55,32.64123025,35.18958072,0.00%,0.00%,0.46%,0.05%,99.49%,1.08,3.94%,0.00%,7.48%,1.28%,87.30%,22.75,6.76%,0.00%,6.61%,0.95%,85.69%,22.81
+559,Anagia,Vounous,T,R,154.71,33.25638074,35.0726915,4.05%,0.00%,8.11%,52.86%,34.97%,178.87,22.09%,0.00%,19.39%,26.77%,31.74%,141.19,23.06%,0.00%,20.04%,26.98%,29.92%,144.08
+560,Analiontas,,N,R,188.94,33.29019677,35.00693683,0.64%,0.00%,28.12%,69.18%,2.06%,264.43,17.01%,0.00%,25.63%,38.33%,19.04%,183.25,27.16%,0.00%,17.83%,18.78%,36.24%,119.14
+572,Dali,Vasilika,T,R,177.69,33.41259667,35.02081066,0.00%,0.00%,33.84%,56.73%,9.44%,237.85,3.75%,0.00%,25.21%,30.54%,40.50%,145.79,5.76%,0.00%,24.72%,31.40%,38.11%,149.42
+570,Dali,Eliouthkia tou Kouzourtou,T,H,239.38,33.42022996,35.02072603,0.00%,0.00%,29.14%,70.86%,0.00%,270.86,3.24%,0.00%,29.07%,58.43%,9.26%,236.67,4.56%,0.69%,26.60%,50.95%,17.20%,210.60
+577,Evrichou,Phoinikas,T,H-R,28.34,32.8905066,35.04981219,0.00%,0.00%,12.41%,0.00%,87.59%,24.82,5.53%,0.00%,13.11%,0.14%,81.23%,32.15,9.64%,0.00%,9.14%,0.05%,81.17%,28.06
+625,Klirou,,T,R,197.37,33.1780402,35.02261979,0.00%,0.00%,33.66%,66.34%,0.00%,266.34,1.97%,0.00%,27.05%,45.49%,25.49%,192.53,2.31%,0.00%,20.43%,30.02%,47.24%,133.24
+656,Lythrodontas,,N,R,229.49,33.29711057,34.95152081,0.00%,0.00%,34.35%,65.65%,0.00%,265.65,0.00%,0.00%,32.80%,59.98%,7.22%,245.53,5.87%,0.00%,24.51%,40.80%,28.82%,177.29
+670,Nikitari,Mylos tou Rousou,T,R,43.78,33.00445388,35.08567344,6.32%,0.00%,25.69%,0.00%,67.99%,57.69,8.57%,0.00%,13.93%,0.00%,77.50%,36.43,15.10%,0.00%,11.06%,0.00%,73.84%,37.21
+672,Nisou,,T,H,63.87,33.39184852,35.02969234,16.19%,0.00%,37.13%,8.43%,38.24%,115.76,7.48%,0.00%,13.19%,1.65%,77.68%,38.81,9.85%,0.00%,10.64%,1.98%,77.54%,37.05
+681,Politiko,,T,R,48.69,33.25818317,35.02332701,0.00%,0.00%,20.80%,0.70%,78.50%,43.71,23.73%,0.00%,15.54%,0.15%,60.59%,55.24,22.04%,0.00%,12.07%,0.31%,65.58%,47.12
+682,Politiko,,T,R,48.69,33.25818317,35.02332701,0.00%,0.00%,20.80%,0.70%,78.50%,43.71,23.73%,0.00%,15.54%,0.15%,60.59%,55.24,22.04%,0.00%,12.07%,0.31%,65.58%,47.12
+683,Politiko,,T,R,48.69,33.25818317,35.02332701,0.00%,0.00%,20.80%,0.70%,78.50%,43.71,23.73%,0.00%,15.54%,0.15%,60.59%,55.24,22.04%,0.00%,12.07%,0.31%,65.58%,47.12
+695,Skouriotissa,Apoti,T,R,266.11,32.89070055,35.09159118,0.00%,0.00%,10.46%,89.54%,0.00%,289.54,0.00%,0.00%,8.45%,86.75%,4.80%,277.16,0.30%,0.00%,7.76%,71.93%,20.00%,231.63
+580,Flasou,,T,R,121.61,32.8895034,35.06516288,20.55%,0.00%,24.63%,33.51%,21.32%,170.33,21.94%,0.00%,19.95%,16.84%,41.26%,112.37,8.08%,0.00%,16.07%,13.97%,61.88%,82.14
+581,Flasou,,T,R,121.61,32.8895034,35.06516288,20.55%,0.00%,24.63%,33.51%,21.32%,170.33,21.94%,0.00%,19.95%,16.84%,41.26%,112.37,8.08%,0.00%,16.07%,13.97%,61.88%,82.14
+712,Anavargos,Ellinospilioi/Alinospilios,T,H,205.48,32.44463648,34.78520597,0.00%,0.00%,15.24%,71.50%,13.26%,244.97,7.15%,0.00%,37.00%,35.03%,20.83%,186.22,6.67%,0.00%,33.30%,37.32%,22.70%,185.24
+713,Anavargos,Ellinospilioi/Alinospilios,T,H,205.48,32.44463648,34.78520597,0.00%,0.00%,15.24%,71.50%,13.26%,244.97,7.15%,0.00%,37.00%,35.03%,20.83%,186.22,6.67%,0.00%,33.30%,37.32%,22.70%,185.24
+716,Anavargos,Ellinospilioi/Alinospilios,T,H,205.48,32.44463648,34.78520597,0.00%,0.00%,15.24%,71.50%,13.26%,244.97,7.15%,0.00%,37.00%,35.03%,20.83%,186.22,6.67%,0.00%,33.30%,37.32%,22.70%,185.24
+705,Agios Fotios,,T,R,41.18,32.61149575,34.87511277,12.53%,0.00%,17.00%,0.00%,70.47%,46.53,6.37%,0.00%,17.97%,0.00%,75.66%,42.31,4.58%,0.00%,15.06%,0.00%,80.37%,34.69
+717,Archimandrita (Pano),,T,R,59.35,32.67524452,34.74827217,1.71%,0.00%,18.99%,18.32%,60.98%,94.64,9.20%,0.00%,8.62%,4.12%,78.06%,38.80,18.70%,0.00%,8.47%,2.98%,69.84%,44.60
+719,Archimandrita,Mantres,Ts,H-R,98.83,32.66561259,34.74122784,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.46%,0.00%,9.76%,0.08%,8.70%,101.21,75.88%,0.00%,9.65%,0.03%,14.44%,95.28
+720,Archimandrita,Mantres,Ts,H-R,98.83,32.66561259,34.74122784,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.46%,0.00%,9.76%,0.08%,8.70%,101.21,75.88%,0.00%,9.65%,0.03%,14.44%,95.28
+721,Archimandrita,Mantres,Ts,H-R,98.83,32.66561259,34.74122784,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.46%,0.00%,9.76%,0.08%,8.70%,101.21,75.88%,0.00%,9.65%,0.03%,14.44%,95.28
+722,Archimandrita,Mantres,Ts,H-R,98.83,32.66561259,34.74122784,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.46%,0.00%,9.76%,0.08%,8.70%,101.21,75.88%,0.00%,9.65%,0.03%,14.44%,95.28
+723,Archimandrita (Kato),Sklinitzia,T,R,68.45,32.66845747,34.74346463,30.74%,0.00%,19.23%,0.00%,50.03%,69.19,45.31%,0.00%,8.96%,0.08%,45.65%,63.46,52.19%,0.00%,10.18%,0.06%,37.58%,72.70
+744,Emba,,N,H,143.36,32.42408195,34.80288525,0.00%,0.00%,17.90%,43.98%,38.11%,167.75,0.00%,0.00%,28.63%,28.43%,42.94%,142.55,0.42%,0.00%,28.20%,20.99%,50.39%,119.79
+749,Geroskipou,,T,H-R,238.28,32.45170867,34.76067279,0.00%,0.00%,49.54%,50.46%,0.00%,250.46,4.03%,0.00%,41.30%,52.48%,2.19%,244.06,2.29%,0.00%,36.04%,48.65%,13.01%,220.33
+750,Geroskipou,,T,H-R,238.28,32.45170867,34.76067279,0.00%,0.00%,49.54%,50.46%,0.00%,250.46,4.03%,0.00%,41.30%,52.48%,2.19%,244.06,2.29%,0.00%,36.04%,48.65%,13.01%,220.33
+755,Geroskipou,Katarameni,N,R,110.87,32.43299552,34.75446229,70.35%,0.00%,27.64%,0.00%,2.01%,125.63,48.82%,0.00%,26.15%,0.04%,24.99%,101.23,47.29%,0.00%,23.19%,4.03%,25.49%,105.75
+751,Geroskipou,Laxia,T,H-R,137.47,32.45664331,34.76896071,0.00%,0.00%,25.35%,58.31%,16.34%,225.64,0.18%,0.00%,21.64%,19.37%,58.81%,101.56,0.07%,0.00%,17.36%,16.81%,65.77%,85.21
+752,Geroskipou,Laxia,T,H-R,137.47,32.45664331,34.76896071,0.00%,0.00%,25.35%,58.31%,16.34%,225.64,0.18%,0.00%,21.64%,19.37%,58.81%,101.56,0.07%,0.00%,17.36%,16.81%,65.77%,85.21
+753,Geroskipou,Laxia,T,H-R,137.47,32.45664331,34.76896071,0.00%,0.00%,25.35%,58.31%,16.34%,225.64,0.18%,0.00%,21.64%,19.37%,58.81%,101.56,0.07%,0.00%,17.36%,16.81%,65.77%,85.21
+754,Geroskipou (Paphos),Ellinika,N,H,225.64,32.42629079,34.75981452,0.00%,0.00%,47.09%,52.91%,0.00%,252.91,0.00%,0.00%,43.02%,43.13%,13.86%,215.42,3.17%,0.00%,38.34%,42.92%,15.57%,208.60
+758,Kallepeia,,N,R,148.35,32.50126139,34.84522413,7.02%,0.00%,35.47%,55.41%,2.10%,244.20,11.16%,0.00%,23.95%,23.22%,41.67%,128.72,10.43%,0.00%,18.00%,8.57%,63.00%,72.13
+759,Kedares,,T,R,112.54,32.73630854,34.83662543,0.88%,0.00%,34.94%,49.01%,15.17%,217.80,6.50%,0.00%,17.85%,9.57%,66.08%,70.91,8.29%,0.00%,15.31%,3.33%,73.06%,48.92
+760,Kissonerga,,T,R,246.10,32.40199001,34.82193066,0.00%,0.00%,41.04%,58.96%,0.00%,258.96,0.77%,0.00%,32.48%,65.83%,0.92%,263.22,11.79%,0.07%,27.86%,49.54%,10.74%,216.12
+761,Kouklia,Arkalon,T,R,101.71,32.57870882,34.70562371,86.67%,0.00%,10.57%,0.01%,2.75%,107.84,66.80%,0.00%,13.32%,2.95%,16.93%,102.28,54.47%,5.02%,13.50%,4.52%,22.49%,95.02
+767,Kouklia,Xylinos,T,H,115.75,32.57646279,34.71326939,0.66%,0.00%,24.16%,23.02%,52.16%,118.04,27.61%,0.00%,16.31%,17.58%,38.51%,112.95,37.72%,1.48%,15.61%,15.78%,29.41%,116.27
+769,Kouklia,Dimmata,T,H-R,100.62,32.60751577,34.71619739,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.86%,0.00%,0.51%,0.00%,0.63%,99.88,92.82%,0.00%,4.58%,0.00%,2.60%,101.98
+768,Kouklia,Spilaion tou Arapi,T,R,122.07,32.59908331,34.69735527,60.87%,0.00%,1.41%,7.52%,30.19%,86.26,29.95%,0.00%,16.60%,27.46%,25.99%,145.53,34.21%,0.00%,15.92%,22.80%,27.07%,134.43
+772,Lemba,Ayios Stephanos,N,H,127.10,32.40682973,34.80836389,0.00%,0.00%,19.49%,23.96%,56.55%,110.86,13.94%,0.00%,24.94%,20.96%,40.16%,126.69,23.67%,0.13%,24.44%,23.74%,28.03%,143.76
+773,Limni (Pano),Charkomas,T,H,227.27,32.48113685,35.03921934,0.00%,0.00%,11.20%,88.80%,0.00%,288.80,0.00%,0.00%,4.73%,74.61%,20.67%,233.27,0.00%,0.00%,3.87%,50.67%,45.46%,159.74
+777,Mesogi,,T,H,134.84,32.45504199,34.81589548,0.00%,0.00%,27.18%,41.46%,31.36%,178.74,0.26%,0.00%,29.94%,25.79%,44.01%,137.52,4.57%,0.00%,22.67%,12.78%,59.98%,88.25
+778,Mesogi,,T,H,134.84,32.45504199,34.81589548,0.00%,0.00%,27.18%,41.46%,31.36%,178.74,0.26%,0.00%,29.94%,25.79%,44.01%,137.52,4.57%,0.00%,22.67%,12.78%,59.98%,88.25
+779,Mesogi,,T,H,134.84,32.45504199,34.81589548,0.00%,0.00%,27.18%,41.46%,31.36%,178.74,0.26%,0.00%,29.94%,25.79%,44.01%,137.52,4.57%,0.00%,22.67%,12.78%,59.98%,88.25
+780,Nea Dimmata,,T,H,87.25,32.52121024,35.13525609,2.09%,0.00%,45.82%,24.81%,27.28%,168.16,6.59%,0.00%,18.40%,5.17%,69.85%,58.88,3.42%,0.00%,12.63%,2.01%,81.93%,34.71
+781,Nea Dimmata,,T,H,87.25,32.52121024,35.13525609,2.09%,0.00%,45.82%,24.81%,27.28%,168.16,6.59%,0.00%,18.40%,5.17%,69.85%,58.88,3.42%,0.00%,12.63%,2.01%,81.93%,34.71
+782,Nea Dimmata,,T,H,87.25,32.52121024,35.13525609,2.09%,0.00%,45.82%,24.81%,27.28%,168.16,6.59%,0.00%,18.40%,5.17%,69.85%,58.88,3.42%,0.00%,12.63%,2.01%,81.93%,34.71
+783,Nea Dimmata,,T,H,87.25,32.52121024,35.13525609,2.09%,0.00%,45.82%,24.81%,27.28%,168.16,6.59%,0.00%,18.40%,5.17%,69.85%,58.88,3.42%,0.00%,12.63%,2.01%,81.93%,34.71
+785,Neo Chorio,Pampelon,N,H-R,113.18,32.33512615,35.030474,74.09%,0.00%,25.91%,0.00%,0.00%,125.91,88.42%,0.00%,11.53%,0.00%,0.06%,111.47,84.19%,0.00%,8.99%,0.00%,6.83%,102.16
+789,Pachyammos,,Ts,H,105.30,32.57989919,35.16936727,86.00%,0.00%,14.00%,0.00%,0.00%,114.00,66.91%,0.00%,10.26%,7.36%,15.48%,109.49,51.13%,0.00%,11.18%,6.31%,31.38%,92.41
+897,Peyia,Agios Georghios,N,H-R,107.59,32.31784368,34.9015955,50.34%,0.00%,27.66%,0.68%,21.32%,107.70,75.59%,2.89%,14.06%,1.33%,6.13%,107.68,79.92%,1.17%,9.51%,2.82%,6.57%,107.40
+896,Peyia,Meletis,N,H-R,128.49,32.3285627,34.90497583,36.80%,12.72%,29.28%,12.27%,8.92%,132.20,48.80%,1.19%,20.52%,14.91%,14.58%,134.58,47.95%,0.41%,20.72%,9.77%,21.16%,118.68
+901,Peyia,Pappara,T,H,179.33,32.37096405,34.87297619,19.33%,0.00%,31.40%,35.47%,13.80%,188.55,32.99%,0.00%,26.02%,32.03%,8.96%,181.12,32.28%,0.00%,25.50%,28.35%,13.86%,168.33
+899,Peyia,Vatouthkia,T,H,91.27,32.38351747,34.85541607,0.26%,0.00%,15.91%,15.21%,68.62%,77.72,16.99%,0.00%,20.53%,10.29%,52.19%,88.92,24.76%,0.00%,21.67%,13.03%,40.55%,107.17
+902,Peyia,Palaiomonastero,T,H,121.66,32.35943248,34.87503332,30.49%,0.00%,47.45%,4.98%,17.09%,140.32,42.02%,0.00%,19.12%,9.84%,29.01%,109.79,44.77%,0.00%,17.29%,11.84%,26.10%,114.88
+903,Polemi,,N,R,184.05,32.5082462,34.88566745,0.00%,0.00%,38.99%,61.01%,0.00%,261.01,0.00%,0.00%,30.85%,41.77%,27.39%,187.00,0.00%,0.00%,22.19%,19.93%,57.89%,104.15
+919,Poli Chrysochous,Koiladia,N,H,85.46,32.43522638,35.04179,85.17%,0.00%,3.33%,0.00%,11.50%,91.82,51.64%,0.00%,12.77%,3.00%,32.59%,86.19,34.52%,0.00%,15.65%,4.18%,45.65%,78.36
+922,Poli Chrysochous,,T,H,220.05,32.4264603,35.03441077,0.00%,0.00%,37.49%,62.51%,0.00%,262.51,6.18%,0.23%,37.84%,49.34%,6.41%,229.89,26.10%,0.53%,26.60%,29.48%,17.29%,167.75
+28,Agios Andronikos,Skotomenos,N,H,138.71,34.15204981,35.48909234,55.13%,0.00%,10.32%,34.55%,0.00%,179.42,84.11%,0.00%,10.67%,5.22%,0.00%,121.10,88.08%,0.00%,8.23%,3.69%,0.00%,115.61
+31,Agios Elias,Spilios,N,H-R,72.24,33.95269231,35.32722338,0.08%,0.00%,24.80%,4.00%,71.11%,61.70,49.38%,0.00%,12.96%,1.42%,36.23%,79.57,50.54%,0.00%,11.50%,0.64%,37.33%,75.45
+29,Agios Elias,Kinanerades,N,R,97.28,33.9343603,35.34102947,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,95.45%,0.00%,3.01%,0.00%,1.54%,101.47,83.35%,0.00%,3.52%,0.00%,13.14%,90.38
+30,Agios Elias,Palaia Avgolida,N,R,100.79,33.94741784,35.34642536,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,99.23%,0.00%,0.77%,0.00%,0.00%,100.77,98.39%,0.00%,1.61%,0.00%,0.00%,101.61
+27,Agios Andronikos,Plaka,N,R,45.17,33.85878215,35.32107215,49.08%,0.00%,6.29%,0.00%,44.63%,61.65,32.67%,0.00%,3.40%,0.00%,63.93%,39.48,30.30%,0.00%,2.04%,0.00%,67.66%,34.38
+42,Agios Theodoros,Akrotiri,N,H,100.46,34.04562991,35.33055194,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.05%,0.00%,1.95%,0.00%,0.00%,101.95,96.80%,0.00%,1.31%,0.00%,1.89%,99.42
+32,Agios Iacovos,Livadhi,N,H-R,18.66,33.82327961,35.32415424,0.00%,0.00%,1.08%,0.00%,98.92%,2.16,0.00%,0.00%,7.41%,5.77%,86.82%,32.13,0.00%,0.00%,5.73%,3.42%,90.86%,21.70
+39,Agios Symeon,Katsiaourena,N,H,103.18,34.23333067,35.47508033,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,95.60%,0.00%,4.40%,0.00%,0.00%,104.40,94.87%,0.00%,5.13%,0.00%,0.00%,105.13
+45,Akanthou,Agios Theodoros,N,H,1.00,33.75367971,35.40720796,0.00%,81.78%,0.00%,0.00%,18.22%,0.00,0.00%,23.87%,0.00%,0.00%,76.13%,0.00,0.00%,12.81%,1.49%,0.00%,85.70%,2.99
+44,Akanthou,Agios Perpiros,N,H,30.57,33.77696353,35.41171929,22.71%,0.00%,10.64%,0.00%,66.65%,43.99,12.62%,0.00%,7.10%,0.15%,80.12%,27.29,9.34%,0.00%,5.42%,0.09%,85.16%,20.44
+65,Gastria,Monastiraki,T,H,88.25,34.01421665,35.32403769,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,82.33%,0.00%,4.70%,0.00%,12.97%,91.73,66.23%,0.00%,3.39%,0.00%,30.38%,73.01
+66,Gastria,Eliochoria,N,H,54.28,34.0081075,35.32615101,15.10%,0.00%,5.56%,0.00%,79.34%,26.21,55.61%,0.00%,7.45%,0.00%,36.94%,70.51,57.22%,0.00%,4.44%,0.00%,38.33%,66.11
+67,Gastria,Eliochoria,N,H,54.28,34.0081075,35.32615101,15.10%,0.00%,5.56%,0.00%,79.34%,26.21,55.61%,0.00%,7.45%,0.00%,36.94%,70.51,57.22%,0.00%,4.44%,0.00%,38.33%,66.11
+54,Davlos,Trapeza,T,H,96.90,33.88767124,35.40590135,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.23%,0.00%,1.77%,0.00%,0.00%,101.77,85.20%,0.00%,1.87%,0.00%,12.93%,88.94
+55,Davlos,Trapeza,T,H,96.90,33.88767124,35.40590135,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.23%,0.00%,1.77%,0.00%,0.00%,101.77,85.20%,0.00%,1.87%,0.00%,12.93%,88.94
+52,Davlos,Kakos,N,H,23.30,33.88466754,35.42120843,0.00%,0.00%,18.37%,0.00%,81.63%,36.74,0.00%,0.00%,9.25%,0.00%,90.75%,18.51,0.00%,0.00%,7.33%,0.00%,92.67%,14.66
+53,Davlos,Terkellovounos,N,R,68.11,33.92385609,35.42635482,45.55%,0.00%,15.83%,0.00%,38.62%,77.21,52.90%,0.00%,6.15%,0.00%,40.95%,65.20,48.29%,0.00%,6.81%,0.00%,44.90%,61.91
+70,Kontea,Ayios Mamas,N,H,38.35,33.71534252,35.07640051,5.37%,0.00%,0.00%,0.00%,94.63%,5.37,38.91%,0.00%,4.18%,0.00%,56.91%,47.26,50.77%,0.00%,5.83%,0.00%,43.40%,62.43
+89,Komi (Kepir),Aloupos,N,H-R,97.20,33.97125888,35.44049636,89.19%,0.00%,10.81%,0.00%,0.00%,110.81,84.60%,0.00%,4.69%,0.00%,10.70%,93.99,77.82%,0.00%,4.49%,0.00%,17.69%,86.79
+91,Komi (Kepir),Vikli,N,H,9.04,33.95717377,35.44344985,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,7.85%,0.00%,2.79%,0.00%,89.35%,13.44,8.71%,0.00%,2.48%,0.00%,88.81%,13.68
+92,Komi (Kepir),Klima,T,H,99.54,33.98083636,35.44429738,83.67%,0.00%,16.33%,0.00%,0.00%,116.33,74.79%,0.00%,11.06%,0.00%,14.15%,96.92,71.34%,0.00%,7.02%,0.00%,21.65%,85.37
+88,Koma tou Yialou,Kortylas,Τ,Η,71.41,34.12040023,35.4379477,63.85%,0.00%,0.00%,0.00%,36.15%,63.85,74.34%,0.00%,0.00%,0.00%,25.66%,74.34,76.05%,0.00%,0.00%,0.00%,23.95%,76.05
+93,Lapathos,Varkes,Τ,H,52.46,33.82890198,35.26744285,0.00%,0.00%,5.61%,4.81%,89.58%,25.64,0.00%,0.00%,13.80%,11.32%,74.87%,61.58,2.23%,0.00%,12.03%,14.62%,71.12%,70.15
+69,Gerani,Trachonas tis Monargas,N,H-R,59.87,33.94534161,35.32065876,0.00%,0.00%,31.00%,0.00%,69.00%,61.99,12.17%,0.00%,18.98%,1.31%,67.54%,54.07,36.49%,0.00%,12.84%,0.46%,50.21%,63.54
+102,Gerani,Trachonas tis Monargas,N,H-R,59.87,33.94534161,35.32065876,0.00%,0.00%,31.00%,0.00%,69.00%,61.99,12.17%,0.00%,18.98%,1.31%,67.54%,54.07,36.49%,0.00%,12.84%,0.46%,50.21%,63.54
+103,Gerani,Trachonas tis Monargas,N,H-R,59.87,33.94534161,35.32065876,0.00%,0.00%,31.00%,0.00%,69.00%,61.99,12.17%,0.00%,18.98%,1.31%,67.54%,54.07,36.49%,0.00%,12.84%,0.46%,50.21%,63.54
+104,Gerani,Trachonas tis Monargas,N,H-R,59.87,33.94534161,35.32065876,0.00%,0.00%,31.00%,0.00%,69.00%,61.99,12.17%,0.00%,18.98%,1.31%,67.54%,54.07,36.49%,0.00%,12.84%,0.46%,50.21%,63.54
+105,Neta,Pyrogi,N,H-R,95.37,34.23725475,35.46986212,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,92.25%,0.00%,4.92%,0.02%,2.81%,102.13,76.09%,0.00%,3.94%,0.01%,19.96%,83.99
+107,Patriki,Fragkafkolia,Ts,R,100.34,33.97487852,35.35049438,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.99%,0.00%,1.01%,0.00%,0.00%,101.01
+145,Styllos,Kokkina,N,H,78.19,33.85238511,35.16626952,97.84%,0.00%,1.29%,0.00%,0.86%,100.43,55.58%,0.00%,4.38%,0.00%,40.05%,64.33,56.27%,0.00%,5.85%,0.61%,37.26%,69.81
+146,Styllos,Kokkina,N,H,78.19,33.85238511,35.16626952,97.84%,0.00%,1.29%,0.00%,0.86%,100.43,55.58%,0.00%,4.38%,0.00%,40.05%,64.33,56.27%,0.00%,5.85%,0.61%,37.26%,69.81
+147,Sygkrasi,Plativounos,N,H-R,101.92,33.84716546,35.28868357,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,97.96%,0.00%,2.04%,0.00%,0.00%,102.04,96.29%,0.00%,3.71%,0.00%,0.00%,103.71
+157,Trikomo,Matsouki,N,H-R,14.08,33.89931182,35.31480958,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,14.18%,0.00%,2.76%,0.00%,83.07%,19.69,17.98%,0.00%,2.29%,0.00%,79.73%,22.56
+158,Trikomo,Vounari,N,H,8.48,33.89868335,35.31209903,0.00%,0.00%,4.17%,0.00%,95.83%,8.33,0.00%,0.00%,3.22%,0.00%,96.78%,6.44,4.94%,0.00%,2.87%,0.00%,92.19%,10.68
+160,Trikomo,Charafti,N,H,64.29,33.90854244,35.26359165,27.23%,0.00%,9.37%,0.00%,63.39%,45.98,27.09%,0.00%,17.89%,2.26%,52.76%,69.65,23.48%,0.00%,16.53%,6.90%,53.09%,77.23
+156,Trikomo,Kavalloi,N,H-R,48.65,33.91465318,35.27665364,0.00%,0.00%,2.63%,0.00%,97.37%,5.26,0.58%,0.00%,15.71%,13.43%,70.28%,72.29,12.36%,0.00%,18.26%,6.51%,62.87%,68.41
+153,Trikomo,Kafkallia A,N,H,28.20,33.87766405,35.32076919,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,6.68%,12.01%,81.31%,49.40,0.87%,0.00%,4.16%,8.67%,86.30%,35.20
+154,Trikomo,Kafkallia A,N,H,28.20,33.87766405,35.32076919,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,6.68%,12.01%,81.31%,49.40,0.87%,0.00%,4.16%,8.67%,86.30%,35.20
+155,Trikomo,Kafkallia A,N,H,28.20,33.87766405,35.32076919,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,6.68%,12.01%,81.31%,49.40,0.87%,0.00%,4.16%,8.67%,86.30%,35.20
+34,Agios Nikolaos (Lefkonoikou),Ellinospilios,N,H-R,23.82,33.65631869,35.36025449,0.00%,0.00%,3.43%,0.00%,96.57%,6.85,0.00%,0.00%,7.23%,4.34%,88.43%,27.49,0.51%,0.00%,6.90%,7.61%,84.98%,37.13
+36,Agios Serghios,Archangelos,T,H-R,40.09,33.8834948,35.1898669,0.00%,0.00%,19.88%,0.00%,80.12%,39.75,0.00%,0.00%,15.89%,0.00%,84.11%,31.77,1.57%,0.00%,15.58%,5.33%,77.51%,48.74
+47,Ammochostos,Karaolos,N,H-R,37.77,33.92124275,35.15617725,5.02%,0.00%,25.88%,0.00%,69.10%,56.78,9.24%,0.00%,11.15%,0.00%,79.61%,31.54,11.00%,0.00%,6.43%,0.37%,82.20%,24.98
+48,Ammochostos,Karaolos,N,H-R,37.77,33.92124275,35.15617725,5.02%,0.00%,25.88%,0.00%,69.10%,56.78,9.24%,0.00%,11.15%,0.00%,79.61%,31.54,11.00%,0.00%,6.43%,0.37%,82.20%,24.98
+49,Ammochostos,Karaolos,N,H-R,37.77,33.92124275,35.15617725,5.02%,0.00%,25.88%,0.00%,69.10%,56.78,9.24%,0.00%,11.15%,0.00%,79.61%,31.54,11.00%,0.00%,6.43%,0.37%,82.20%,24.98
+125,Rizokarpaso,Vrysi,T,H,49.69,34.36886511,35.6253448,26.39%,0.00%,9.62%,0.00%,63.99%,45.64,35.77%,0.00%,5.70%,0.00%,58.52%,47.18,38.67%,0.00%,6.40%,1.59%,53.34%,56.24
+126,Rizokarpaso,Vrysi,T,H,49.69,34.36886511,35.6253448,26.39%,0.00%,9.62%,0.00%,63.99%,45.64,35.77%,0.00%,5.70%,0.00%,58.52%,47.18,38.67%,0.00%,6.40%,1.59%,53.34%,56.24
+127,Rizokarpaso,Vrysi,T,H,49.69,34.36886511,35.6253448,26.39%,0.00%,9.62%,0.00%,63.99%,45.64,35.77%,0.00%,5.70%,0.00%,58.52%,47.18,38.67%,0.00%,6.40%,1.59%,53.34%,56.24
+128,Rizokarpaso,Vrysi,T,H,49.69,34.36886511,35.6253448,26.39%,0.00%,9.62%,0.00%,63.99%,45.64,35.77%,0.00%,5.70%,0.00%,58.52%,47.18,38.67%,0.00%,6.40%,1.59%,53.34%,56.24
+117,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+118,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+119,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+120,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+121,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+122,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+123,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+124,Rizokarpaso,Afentrika-Limnionas,T,H,88.48,34.43319197,35.64916721,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,81.43%,0.00%,3.58%,0.00%,14.99%,88.60,64.80%,0.00%,6.02%,0.00%,29.18%,76.84
+90,Komi (Kepir),Ayia Marina,N,H,71.85,34.01595796,35.41470757,61.29%,0.00%,0.00%,0.00%,38.71%,61.29,76.94%,0.00%,3.85%,0.00%,19.21%,84.63,63.13%,0.00%,3.25%,0.00%,33.62%,69.63
+94,Lefkonoiko,,Τ,Η,250.46,33.73214391,35.26025871,0.00%,0.00%,47.69%,52.31%,0.00%,252.31,4.35%,0.00%,30.62%,65.03%,0.00%,260.68,11.79%,0.00%,23.29%,60.01%,4.92%,238.39
+98,Mandres,Plousia,N,H-R,42.75,33.84446115,35.35051483,20.65%,0.00%,0.00%,0.00%,79.35%,20.65,48.47%,0.00%,1.06%,0.00%,50.47%,50.59,51.73%,0.00%,2.64%,0.00%,45.63%,57.01
+97,Mandres,Melissouthkia,T,H,110.70,33.83158299,35.35042948,82.58%,0.00%,17.42%,0.00%,0.00%,117.42,89.13%,0.00%,10.87%,0.00%,0.00%,110.87,87.71%,0.00%,8.01%,0.03%,4.26%,103.81
+108,Peristerona,Krotiri,T,H,103.69,33.77047891,35.2051823,90.27%,0.00%,9.73%,0.00%,0.00%,109.73,96.60%,0.00%,3.27%,0.00%,0.13%,103.13,91.47%,0.00%,2.84%,0.36%,5.33%,98.22
+109,Peristerona,Krotiri,T,H,103.69,33.77047891,35.2051823,90.27%,0.00%,9.73%,0.00%,0.00%,109.73,96.60%,0.00%,3.27%,0.00%,0.13%,103.13,91.47%,0.00%,2.84%,0.36%,5.33%,98.22
+152,Trikomo,Vounos ton Krinon,N,H-R,104.23,33.87069784,35.2888496,98.23%,0.00%,1.77%,0.00%,0.00%,101.77,94.50%,0.00%,5.50%,0.00%,0.00%,105.50,94.59%,0.00%,5.41%,0.00%,0.00%,105.41
+58,Flamoudi,Lithosourka,N,H-R,12.32,33.87245696,35.409454,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,2.21%,0.00%,3.55%,0.00%,94.24%,9.31,16.52%,0.00%,5.56%,0.00%,77.92%,27.64
+57,Flamoudi,Ampelia,N,H,148.60,33.85874741,35.39484932,26.15%,0.00%,23.08%,36.46%,14.32%,181.68,63.19%,0.00%,14.39%,17.68%,4.74%,145.01,78.35%,0.00%,8.79%,7.72%,5.14%,119.10
+59,Flamoudi,Pallouri,N,H,49.75,33.82623037,35.40803951,53.69%,0.00%,0.00%,0.00%,46.31%,53.69,36.15%,0.00%,5.06%,0.00%,58.79%,46.28,39.27%,0.00%,4.98%,0.02%,55.73%,49.29
+116,Psyllatos,Moutti,N,H,101.73,33.67514222,35.2435736,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,93.83%,0.00%,4.71%,0.00%,1.46%,103.25,93.84%,0.00%,4.05%,0.00%,2.10%,101.95
+165,Agia Eirini,Loura,N,H,86.15,32.9508608,35.30454015,97.49%,0.00%,0.00%,0.00%,2.51%,97.49,65.49%,0.84%,4.54%,0.00%,29.13%,74.56,71.04%,0.40%,7.26%,0.28%,21.02%,86.40
+166,Agia Eirini,Liontos,N,R,109.95,32.95587353,35.30026903,99.42%,0.00%,0.58%,0.00%,0.00%,100.58,88.68%,0.00%,9.93%,1.32%,0.07%,112.50,84.69%,0.40%,11.44%,3.07%,0.41%,116.78
+163,Agia Eirini,Ksirafes,T,H,104.63,32.94890514,35.29885035,89.48%,0.00%,10.52%,0.00%,0.00%,110.52,86.97%,0.66%,10.73%,0.05%,1.60%,108.56,78.22%,0.40%,8.17%,0.08%,13.13%,94.80
+164,Agia Eirini,Ksirafes,T,H,104.63,32.94890514,35.29885035,89.48%,0.00%,10.52%,0.00%,0.00%,110.52,86.97%,0.66%,10.73%,0.05%,1.60%,108.56,78.22%,0.40%,8.17%,0.08%,13.13%,94.80
+167,Agia Eirini,Foradomantra,N,H,117.16,32.95759203,35.30176181,92.33%,0.00%,1.22%,6.45%,0.00%,114.12,87.05%,0.00%,11.57%,1.36%,0.02%,114.27,82.15%,0.25%,11.67%,5.87%,0.06%,123.10
+168,Agia Eirini,Koukkopetres,T,H,104.34,32.95439688,35.30461687,86.68%,0.00%,13.32%,0.00%,0.00%,113.32,78.51%,0.00%,10.00%,0.82%,10.67%,100.96,82.61%,0.40%,7.18%,0.59%,9.22%,98.74
+169,Agia Eirini,Kattouthkies,N,H,110.50,32.951568,35.29628681,84.16%,0.00%,15.62%,0.22%,0.00%,116.06,87.29%,0.00%,10.12%,0.33%,2.25%,108.53,90.03%,0.38%,8.01%,0.28%,1.30%,106.90
+174,Agirda,Boc Koyiak,N,H,105.14,33.26679806,35.28470015,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,89.74%,0.00%,1.65%,2.85%,5.76%,101.60,68.54%,0.00%,9.88%,8.51%,13.07%,113.83
+172,Agirda,Bostanlik,N,H-R,59.48,33.28254119,35.29497807,0.00%,0.00%,6.08%,0.49%,93.44%,13.62,18.50%,0.00%,12.69%,5.69%,63.11%,60.97,22.65%,0.00%,15.31%,16.86%,45.19%,103.84
+173,Agirda,Kutranli Maghra,N,H,161.74,33.27126065,35.29873369,66.71%,0.00%,13.05%,12.97%,7.27%,131.71,37.01%,0.00%,18.47%,35.24%,9.28%,179.66,44.19%,0.00%,14.93%,33.27%,7.61%,173.85
+175,Asomatos,Tris Elies,N,H,107.00,33.08316889,35.27655968,91.23%,0.00%,8.77%,0.00%,0.00%,108.77,93.76%,0.00%,6.24%,0.00%,0.00%,106.24,94.00%,0.00%,6.00%,0.00%,0.00%,106.00
+176,Asomatos,Halospita,N,R,84.77,33.10488699,35.26491462,81.89%,0.00%,0.00%,0.00%,18.11%,81.89,78.49%,0.00%,5.86%,0.00%,15.65%,90.22,73.68%,0.00%,4.27%,0.00%,22.05%,82.21
+177,Asomatos,Lakia tis Evretis,N,R,104.71,33.08811984,35.26942246,94.67%,0.00%,5.33%,0.00%,0.00%,105.33,94.90%,0.00%,5.10%,0.00%,0.00%,105.10,96.30%,0.00%,3.70%,0.00%,0.00%,103.70
+179,Asomatos,Trimithkia,N,H,106.06,33.06855237,35.2650163,90.16%,0.00%,9.84%,0.00%,0.00%,109.84,95.60%,0.00%,4.40%,0.00%,0.00%,104.40,96.05%,0.00%,3.95%,0.00%,0.00%,103.95
+178,Asomatos,Aloupotrypes,N,H,100.00,33.07771453,35.26081027,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00
+272,Vasileia,Petra pou chalase,N,R,105.92,33.11251379,35.33254469,93.98%,0.00%,6.02%,0.00%,0.00%,106.02,94.94%,0.00%,5.06%,0.00%,0.00%,105.06,93.32%,0.00%,6.66%,0.01%,0.00%,106.69
+273,Vasileia,Petra tis Rodous,N,H,105.05,33.1111137,35.33392698,94.08%,0.00%,5.92%,0.00%,0.00%,105.92,96.29%,0.00%,3.71%,0.00%,0.00%,103.71,94.49%,0.00%,5.51%,0.00%,0.00%,105.51
+271,Vasileia,Kampos tou Loi,N,R,106.09,33.09871592,35.33583699,97.08%,0.00%,2.92%,0.00%,0.00%,102.92,91.32%,0.00%,8.68%,0.00%,0.00%,108.68,93.33%,0.00%,6.67%,0.00%,0.00%,106.67
+270,Vasileia,Varkes/Vanilas,N,H,270.41,33.12759575,35.35553411,0.00%,0.00%,9.70%,90.30%,0.00%,290.30,6.22%,0.00%,17.50%,76.27%,0.00%,270.05,10.82%,0.00%,17.52%,68.34%,3.32%,250.89
+184,Dikomo,Tourchellos,N,H,50.77,33.30983005,35.27349692,1.10%,0.00%,10.44%,0.00%,88.46%,21.98,15.58%,0.00%,9.81%,8.88%,65.73%,61.83,30.04%,0.00%,9.37%,6.57%,54.01%,68.50
+181,Dikomo (Pano),Mantres tou Iona,T,H-R,55.68,33.33097128,35.27431273,1.92%,0.00%,6.59%,0.00%,91.49%,15.09,20.34%,0.00%,17.95%,3.29%,58.41%,66.12,30.24%,0.00%,14.39%,8.94%,46.43%,85.84
+182,Dikomo (Pano),Mantres tou Iona,T,H-R,55.68,33.33097128,35.27431273,1.92%,0.00%,6.59%,0.00%,91.49%,15.09,20.34%,0.00%,17.95%,3.29%,58.41%,66.12,30.24%,0.00%,14.39%,8.94%,46.43%,85.84
+185,Dikomo,Kryon Neron,N,H,93.00,33.31330868,35.28668269,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,91.87%,0.00%,2.63%,0.00%,5.50%,97.13,75.28%,0.00%,3.30%,0.00%,21.42%,81.88
+183,Dikomo,Pigadia,N,H,50.49,33.31597776,35.28404389,50.45%,0.00%,0.00%,0.00%,49.55%,50.45,49.77%,0.00%,0.00%,0.00%,50.23%,49.77,47.17%,0.00%,2.04%,0.00%,50.79%,51.25
+186,Diorios,Lakkos tou Kourri,N,R,104.98,33.04786259,35.32093136,99.08%,0.00%,0.91%,0.01%,0.00%,100.93,86.45%,0.00%,10.58%,0.17%,2.80%,108.12,80.47%,0.00%,10.44%,1.52%,7.57%,105.90
+187,Diorios,Lakkouthkia,N,H-R,139.76,33.05269675,35.31976582,37.78%,0.00%,20.24%,32.96%,9.01%,177.15,76.04%,0.00%,10.15%,10.17%,3.64%,126.87,84.49%,0.00%,8.38%,4.66%,2.46%,115.25
+190,Diorios,Palaiomantra,N,H,112.95,33.04811964,35.3090277,73.99%,0.00%,20.30%,0.09%,5.62%,114.85,78.63%,0.00%,12.03%,0.36%,8.98%,103.77,76.16%,0.00%,13.89%,5.44%,4.52%,120.24
+188,Diorios,(Laxia tou) Hadji Bairam,N,H,111.85,33.02035837,35.2685681,81.57%,0.00%,18.43%,0.00%,0.00%,118.43,90.96%,0.00%,9.04%,0.00%,0.00%,109.04,91.91%,0.00%,8.09%,0.00%,0.00%,108.09
+189,Diorios,Mahania (Makhenia),N,H-R,106.94,33.00522032,35.2866236,88.90%,0.00%,10.44%,0.66%,0.00%,111.76,96.40%,0.00%,3.53%,0.07%,0.00%,103.66,94.61%,0.00%,5.37%,0.02%,0.00%,105.41
+192,El(ai)a,Vrysi,N,H,214.24,33.21699845,35.33363651,6.04%,0.00%,19.76%,74.20%,0.00%,268.16,39.25%,0.00%,17.59%,43.16%,0.00%,203.90,56.96%,0.00%,15.43%,27.61%,0.00%,170.65
+193,Kampιli,Margi,N,R,38.38,33.09416941,35.31027704,2.17%,0.00%,0.00%,0.00%,97.83%,2.17,33.39%,0.00%,8.73%,0.31%,57.56%,51.80,33.95%,0.00%,13.42%,0.13%,52.50%,61.17
+194,Kampιli,Kafkalla,N,R,87.01,33.08975816,35.29722477,62.79%,0.00%,9.61%,1.34%,26.26%,86.03,66.99%,0.00%,8.19%,0.56%,24.27%,85.03,76.87%,0.00%,6.26%,0.19%,16.67%,89.98
+258,Kampιli,Kafkalla,N,R,87.01,33.08975816,35.29722477,62.79%,0.00%,9.61%,1.34%,26.26%,86.03,66.99%,0.00%,8.19%,0.56%,24.27%,85.03,76.87%,0.00%,6.26%,0.19%,16.67%,89.98
+259,Kampιli,Kafkalla,N,R,87.01,33.08975816,35.29722477,62.79%,0.00%,9.61%,1.34%,26.26%,86.03,66.99%,0.00%,8.19%,0.56%,24.27%,85.03,76.87%,0.00%,6.26%,0.19%,16.67%,89.98
+195,Kalon Chorion (Kapouti),Kapnistos,N,H,108.03,33.0476487,35.25734501,83.28%,0.00%,16.72%,0.00%,0.00%,116.72,96.02%,0.00%,3.95%,0.02%,0.01%,103.98,96.59%,0.00%,3.39%,0.01%,0.02%,103.39
+196,Kalon Chorion (Kapouti),Kapnistos,N,H,108.03,33.0476487,35.25734501,83.28%,0.00%,16.72%,0.00%,0.00%,116.72,96.02%,0.00%,3.95%,0.02%,0.01%,103.98,96.59%,0.00%,3.39%,0.01%,0.02%,103.39
+198,Kalon Chorion (Kapouti),Pallouteri,N,R,100.63,33.05337724,35.25513148,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,99.99%,0.00%,0.01%,0.00%,0.00%,100.01,97.89%,0.00%,2.00%,0.00%,0.11%,101.89
+200,Kalon Chorion (Kapouti),Melissia,N,H,106.70,33.03225903,35.22403501,99.98%,0.00%,0.00%,0.00%,0.02%,99.98,90.61%,0.00%,9.05%,0.27%,0.07%,109.51,89.49%,0.00%,10.24%,0.22%,0.06%,110.61
+199,Kalon Chorion (Kapouti),Foiniki,N,H-R,105.22,33.05165171,35.23801244,90.24%,0.00%,9.76%,0.00%,0.00%,109.76,96.63%,0.00%,3.37%,0.00%,0.00%,103.37,97.48%,0.00%,2.52%,0.00%,0.00%,102.52
+202,Karavas,Archaggelos,N,H,144.81,33.22279288,35.33204711,88.42%,0.00%,11.58%,0.00%,0.00%,111.58,61.58%,0.00%,17.94%,20.47%,0.00%,158.89,59.63%,0.00%,16.79%,23.58%,0.00%,163.95
+204,Karavas,Palaiomonastiron,N,R,118.22,33.23305337,35.32928567,79.59%,0.00%,20.41%,0.00%,0.00%,120.41,87.93%,0.00%,12.07%,0.00%,0.00%,112.07,81.68%,0.00%,14.45%,3.87%,0.00%,122.19
+203,Karavas,Karydia tou Markou,N,R,256.58,33.23052266,35.33601095,0.00%,0.00%,18.48%,81.52%,0.00%,281.52,14.45%,0.00%,15.27%,70.28%,0.00%,255.83,24.90%,0.00%,17.81%,57.29%,0.00%,232.39
+201,Karavas,Ayia Eirini,N,H,255.22,33.18991677,35.33831701,1.28%,0.00%,11.88%,86.84%,0.00%,285.56,17.54%,0.00%,15.89%,66.56%,0.00%,249.02,25.84%,0.00%,17.23%,56.93%,0.00%,231.09
+205,Karpashia,Shiapia,T,H-R,96.70,33.07009784,35.2940881,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,65.64%,0.00%,6.17%,4.60%,23.59%,91.79,60.53%,0.00%,9.15%,6.49%,23.83%,98.31
+228,Kormakitis,Panayia,N,H,124.53,33.00407466,35.34415021,11.73%,0.00%,19.93%,13.48%,54.86%,92.04,52.19%,0.00%,17.87%,18.39%,11.54%,143.11,65.31%,0.00%,15.12%,14.30%,5.27%,138.43
+229,Kormakitis,Panayia,N,H,124.53,33.00407466,35.34415021,11.73%,0.00%,19.93%,13.48%,54.86%,92.04,52.19%,0.00%,17.87%,18.39%,11.54%,143.11,65.31%,0.00%,15.12%,14.30%,5.27%,138.43
+230,Kormakitis,Herissa (Sherisses),N,H,109.00,32.966591,35.34781537,90.91%,0.00%,9.09%,0.00%,0.00%,109.09,90.56%,0.00%,9.44%,0.00%,0.00%,109.44,91.55%,0.00%,8.45%,0.01%,0.00%,108.46
+233,Kormakitis,Halospita,N,H,101.19,33.02319588,35.34341549,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,99.06%,0.00%,0.94%,0.00%,0.00%,100.94,94.79%,0.00%,3.64%,0.18%,1.39%,102.62
+232,Kormakitis,Ayios Yeoryios,N,H,75.01,32.99581454,35.36775622,45.30%,0.00%,23.03%,0.16%,31.51%,91.84,43.95%,0.00%,12.59%,0.05%,43.41%,69.29,49.08%,0.00%,7.38%,0.02%,43.52%,63.90
+231,Kormakitis,Yerman tou Κυριάκου (Krikaki),N,H,103.17,32.98838446,35.36616329,91.79%,0.00%,8.21%,0.00%,0.00%,108.21,92.65%,0.00%,5.67%,0.00%,1.68%,103.99,81.09%,0.00%,8.06%,0.03%,10.82%,97.30
+235,Krini,Yere Oldu,N,H,111.48,33.23058283,35.28272112,48.67%,0.00%,10.31%,21.26%,19.76%,133.07,76.91%,0.00%,7.22%,5.26%,10.62%,107.12,68.84%,0.00%,7.53%,3.45%,20.18%,94.26
+236,Krini,Koja Tarlasi,N,H,105.96,33.22684879,35.28279957,85.63%,0.00%,14.02%,0.00%,0.35%,113.67,72.57%,0.00%,10.87%,3.69%,12.87%,105.38,78.67%,0.00%,6.33%,2.50%,12.50%,98.83
+245,Lapithos,Vrysi tou Barba,N,R,244.49,33.16052861,35.3501767,0.00%,0.00%,22.39%,77.61%,0.00%,277.61,0.00%,0.00%,16.71%,73.00%,10.30%,252.40,0.00%,0.00%,16.04%,57.13%,26.84%,203.45
+246,Lapithos,Vrysi tou Barba,N,R,244.49,33.16052861,35.3501767,0.00%,0.00%,22.39%,77.61%,0.00%,277.61,0.00%,0.00%,16.71%,73.00%,10.30%,252.40,0.00%,0.00%,16.04%,57.13%,26.84%,203.45
+248,Lapithos,Airiotissa,N,H,223.90,33.16949479,35.34954776,2.41%,0.00%,14.64%,82.94%,0.00%,280.53,14.06%,0.00%,14.52%,56.34%,15.08%,212.11,11.41%,0.00%,11.93%,47.93%,28.73%,179.06
+244,Lapithos,Htolithari (Phtolikhari),N,H,218.79,33.14798021,35.35516147,0.00%,0.00%,34.12%,65.88%,0.00%,265.88,0.00%,0.00%,24.44%,57.51%,18.05%,221.42,1.31%,0.00%,14.76%,46.08%,37.85%,169.07
+251,Lapithos,Asproyi,N,H,125.54,33.16064251,35.33588867,70.26%,0.00%,29.74%,0.00%,0.00%,129.74,84.92%,0.00%,15.08%,0.00%,0.00%,115.08,76.59%,0.00%,15.01%,8.40%,0.00%,131.81
+250,Lapithos,Mantra tou Vizou,N,H,269.43,33.15331797,35.34363429,0.00%,0.00%,7.49%,92.51%,0.00%,292.51,7.67%,0.00%,13.86%,78.47%,0.00%,270.80,18.97%,0.00%,17.07%,63.95%,0.00%,244.98
+249,Lapithos,Stavros,N,H,269.23,33.17486935,35.34421053,1.16%,0.00%,16.73%,82.11%,0.00%,280.96,11.17%,0.00%,12.77%,76.06%,0.00%,264.89,10.98%,0.00%,16.19%,72.82%,0.00%,261.84
+252,Lapithos,Prostemenos,N,H,191.96,33.18243801,35.33380384,32.42%,0.00%,19.76%,47.83%,0.00%,215.41,55.15%,0.00%,15.15%,29.70%,0.00%,174.55,49.72%,0.00%,14.64%,35.64%,0.00%,185.92
+180,Bellapais,Petromoudia,N,H,72.49,33.3017286,35.31101506,33.39%,0.00%,3.52%,0.56%,62.53%,42.10,58.50%,0.00%,9.06%,0.97%,31.48%,79.52,71.62%,0.00%,11.40%,0.48%,16.50%,95.85
+260,Palaesophos,Mersineri,N,R,132.10,33.21103445,35.32449278,76.56%,0.00%,23.44%,0.00%,0.00%,123.44,73.64%,0.00%,16.48%,9.87%,0.00%,136.23,73.72%,0.00%,15.93%,10.36%,0.00%,136.64
+263,Pileri,Yarin Alti,N,H-R,99.93,33.20906733,35.29490064,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,99.65%,0.00%,0.00%,0.00%,0.35%,99.65,95.49%,0.00%,2.11%,0.15%,2.26%,100.15
+261,Pileri,Kafkalla/Makrotrachona,N,H,101.71,33.19529284,35.28811494,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,97.58%,0.00%,2.42%,0.00%,0.00%,102.42,97.28%,0.00%,2.72%,0.00%,0.00%,102.72
+262,Pileri,Veran Arasi,N,H,132.86,33.21861467,35.28308086,69.51%,0.00%,13.81%,13.99%,2.70%,139.09,77.07%,0.00%,7.92%,14.03%,0.98%,135.00,80.50%,0.00%,6.53%,10.31%,2.65%,124.50
+267,Sysklipos,Pylos,N,R,92.03,33.17877386,35.30250853,95.93%,0.00%,0.00%,0.00%,4.07%,95.93,77.91%,0.00%,3.41%,0.19%,18.50%,85.29,74.98%,0.00%,5.78%,2.78%,16.46%,94.87
+266,Sysklipos,Mouttonevron,N,R,106.68,33.17836091,35.30568493,79.05%,0.00%,20.95%,0.00%,0.00%,120.95,95.32%,0.00%,4.68%,0.00%,0.00%,104.68,87.49%,0.00%,3.28%,0.12%,9.11%,94.41
+269,Sychari,Ziziros,N,H,102.60,33.36917182,35.27390641,98.37%,0.00%,0.55%,0.00%,1.08%,99.47,88.33%,0.00%,6.17%,2.18%,3.32%,107.20,91.67%,0.00%,3.56%,0.78%,4.00%,101.12
+40,Agios Theodoros,,T,H-R,211.37,34.02874245,35.36663179,0.00%,0.00%,30.77%,69.23%,0.00%,269.23,1.29%,0.00%,24.47%,57.32%,16.92%,222.17,22.00%,0.00%,15.21%,30.10%,32.69%,142.71
+161,Vatili,,N,H-R,66.16,33.65115455,35.14081133,27.13%,0.00%,0.00%,0.00%,72.87%,27.13,33.11%,0.00%,10.08%,9.22%,47.59%,80.93,29.58%,0.00%,11.13%,12.86%,46.42%,90.43
+64,Galinoporni,,N,H-R,200.33,34.30327175,35.52134285,12.62%,0.00%,28.98%,58.40%,0.00%,245.78,34.45%,0.00%,22.25%,39.41%,3.88%,197.19,60.54%,0.00%,15.22%,22.35%,1.89%,158.03
+68,Genagra,,N,H,193.19,33.6980296,35.21793639,0.00%,0.00%,42.08%,57.92%,0.00%,257.92,0.01%,0.00%,30.13%,48.02%,21.83%,204.34,20.27%,0.00%,18.34%,20.12%,41.28%,117.30
+71,Koroveia,,T,H,145.93,34.27581458,35.50918897,53.82%,0.00%,24.93%,21.25%,0.00%,167.43,70.99%,0.00%,13.42%,15.59%,0.00%,144.60,82.20%,0.00%,9.72%,8.04%,0.04%,125.76
+95,Limnia,,T,R,193.04,33.85787984,35.1976525,0.00%,0.00%,34.30%,65.70%,0.00%,265.70,3.78%,0.00%,20.34%,44.56%,31.32%,178.13,10.67%,0.00%,16.70%,30.41%,42.22%,135.29
+101,Milia,,T,R,100.72,33.802046,35.234758,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.18%,0.00%,1.82%,0.00%,0.00%,101.82,95.61%,0.00%,2.36%,0.00%,2.03%,100.33
+96,Liopetri,,Τ,R,234.61,33.89090205,35.00587566,0.00%,0.00%,41.35%,58.65%,0.00%,258.65,0.00%,0.00%,35.00%,58.38%,6.63%,245.12,0.00%,0.00%,29.07%,47.31%,23.62%,200.06
+110,Peristerona,,T,H,229.85,33.76084282,35.21704374,0.00%,0.00%,27.73%,72.27%,0.00%,272.27,0.00%,0.00%,23.76%,67.19%,9.05%,249.10,8.53%,0.00%,20.22%,39.73%,31.51%,168.17
+114,Pigi,,T,H,74.23,33.77081181,35.22609562,63.70%,0.00%,9.90%,0.00%,26.40%,83.50,49.01%,0.00%,9.70%,0.00%,41.29%,68.40,50.95%,0.00%,7.69%,1.49%,39.87%,70.79
+115,Pigi,,T,H,74.23,33.77081181,35.22609562,63.70%,0.00%,9.90%,0.00%,26.40%,83.50,49.01%,0.00%,9.70%,0.00%,41.29%,68.40,50.95%,0.00%,7.69%,1.49%,39.87%,70.79
+113,Peristeronopigi,,T,H,238.23,33.75928264,35.21995757,0.00%,0.00%,36.37%,63.63%,0.00%,263.63,0.00%,0.00%,29.58%,63.82%,6.60%,250.62,5.69%,0.00%,23.30%,49.38%,21.63%,200.43
+144,Sinta,Siradash,Ν,R,200.98,33.70181821,35.1573008,0.00%,0.00%,35.17%,64.83%,0.00%,264.83,2.33%,0.00%,24.71%,52.06%,20.90%,207.92,18.66%,0.00%,13.10%,28.44%,39.80%,130.19
+100,Marathovounos,Alonia tou Pishia,N,H-R,226.22,33.61775102,35.22219124,0.00%,0.00%,26.43%,73.57%,0.00%,273.57,1.35%,0.00%,23.03%,66.90%,8.72%,248.11,15.20%,0.00%,14.19%,37.80%,32.81%,156.98
+99,Maratha,Vrysin,N,R,98.63,33.77639071,35.21044419,0.00%,0.00%,24.14%,35.55%,40.31%,154.94,5.53%,0.00%,17.89%,11.61%,64.97%,76.13,35.13%,0.00%,8.79%,4.04%,52.04%,64.83
+1,Achna,,N,R,48.98,33.80764393,35.04779183,17.60%,0.00%,32.04%,0.00%,50.36%,81.69,6.78%,0.00%,11.63%,0.01%,81.59%,30.05,5.53%,0.00%,11.74%,2.07%,80.66%,35.21
+150,Trikomo,,T,R,241.43,33.89186266,35.28603545,0.00%,0.00%,38.00%,62.00%,0.00%,262.00,0.97%,0.00%,37.85%,61.18%,0.00%,260.21,9.95%,0.00%,24.97%,47.40%,17.68%,202.08
+159,Trikomo,,T,R,241.43,33.89186266,35.28603545,0.00%,0.00%,38.00%,62.00%,0.00%,262.00,0.97%,0.00%,37.85%,61.18%,0.00%,260.21,9.95%,0.00%,24.97%,47.40%,17.68%,202.08
+60,Flamoudi,Spilios (tou Tsiali),T,H,20.79,33.86337612,35.41297417,0.00%,0.00%,15.14%,0.00%,84.86%,30.28,0.00%,0.00%,8.63%,0.00%,91.37%,17.25,0.00%,0.00%,7.42%,0.00%,92.58%,14.84
+61,Flamoudi,Varkes,N,H-R,23.91,33.85196008,35.40500586,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,18.82%,0.00%,4.74%,0.00%,76.44%,28.30,33.99%,0.00%,4.73%,0.00%,61.29%,43.44
+170,Agios Epiktitos,Chrysochorafon,T,H-R,178.27,33.404711,35.315358,0.00%,0.00%,28.34%,59.62%,12.04%,235.54,0.58%,0.00%,23.85%,36.40%,39.18%,157.46,24.29%,0.00%,19.55%,26.14%,30.02%,141.82
+171,Agios Epiktitos,Chrysochorafon,T,H-R,178.27,33.404711,35.315358,0.00%,0.00%,28.34%,59.62%,12.04%,235.54,0.58%,0.00%,23.85%,36.40%,39.18%,157.46,24.29%,0.00%,19.55%,26.14%,30.02%,141.82
+62,Flamoudi,Trachonas,N,H,100.24,33.86571446,35.39278857,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,97.76%,0.00%,1.34%,0.09%,0.81%,100.71
+282,Athienou,Malloura,T,R,12.47,33.52582031,35.01993118,0.00%,0.00%,8.40%,0.00%,91.60%,16.81,0.00%,0.00%,5.82%,0.00%,94.18%,11.64,0.00%,0.00%,4.48%,0.00%,95.52%,8.97
+290,Kofinou,,T,H,85.83,33.38398777,34.82401831,93.75%,0.00%,0.12%,0.00%,6.13%,93.99,43.50%,0.00%,7.68%,7.82%,41.00%,82.32,39.36%,0.00%,8.57%,8.23%,43.84%,81.17
+349,Xylotymbou,,T,H,131.84,33.73624738,35.01245588,0.21%,0.00%,22.89%,18.63%,58.27%,101.89,26.91%,0.00%,25.17%,22.62%,25.30%,145.10,47.88%,0.00%,18.10%,21.48%,12.54%,148.52
+343,Tersefanou,Kaminia,T,H-R,90.79,33.54754077,34.85935048,0.00%,0.00%,25.36%,0.13%,74.51%,51.11,25.47%,0.00%,19.25%,9.52%,45.76%,92.54,41.18%,0.00%,19.26%,16.33%,23.22%,128.71
+344,Tremetousia,Kafkalla,N,H,22.18,33.58817755,35.10235877,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,21.69%,0.00%,3.25%,0.00%,75.06%,28.19,32.19%,0.00%,3.08%,0.00%,64.72%,38.36
+494,Lemesos,Vouppia,N,R,137.49,33.00839546,34.69992882,5.14%,0.00%,29.21%,8.04%,57.61%,87.68,2.46%,0.00%,36.75%,27.73%,33.05%,159.16,0.92%,0.00%,36.68%,30.45%,31.95%,165.63
+351,Agios Georgios Silikou,Alis,T,H-R,85.37,32.89925564,34.81422096,0.00%,0.00%,39.36%,19.86%,40.78%,138.31,0.61%,0.00%,23.83%,7.20%,68.36%,69.87,3.53%,0.00%,18.44%,2.51%,75.52%,47.93
+352,Agios Georgios Silikou,Alis,T,H-R,85.37,32.89925564,34.81422096,0.00%,0.00%,39.36%,19.86%,40.78%,138.31,0.61%,0.00%,23.83%,7.20%,68.36%,69.87,3.53%,0.00%,18.44%,2.51%,75.52%,47.93
+353,Agios Georgios Silikou,Alis,T,H-R,85.37,32.89925564,34.81422096,0.00%,0.00%,39.36%,19.86%,40.78%,138.31,0.61%,0.00%,23.83%,7.20%,68.36%,69.87,3.53%,0.00%,18.44%,2.51%,75.52%,47.93
+354,Agios Georgios Silikou,Alis,T,H-R,85.37,32.89925564,34.81422096,0.00%,0.00%,39.36%,19.86%,40.78%,138.31,0.61%,0.00%,23.83%,7.20%,68.36%,69.87,3.53%,0.00%,18.44%,2.51%,75.52%,47.93
+355,Agios Georgios Silikou,Alis,T,H-R,85.37,32.89925564,34.81422096,0.00%,0.00%,39.36%,19.86%,40.78%,138.31,0.61%,0.00%,23.83%,7.20%,68.36%,69.87,3.53%,0.00%,18.44%,2.51%,75.52%,47.93
+400,Arsos,Pantaros (Platanos),T,R,34.06,32.76068197,34.84026023,0.00%,0.00%,19.26%,0.00%,80.74%,38.52,0.00%,0.00%,15.45%,0.00%,84.55%,30.89,0.00%,0.00%,16.34%,0.03%,83.63%,32.78
+393,Alassa,Pano Vouppa,T,H,41.23,32.92367936,34.75978661,0.00%,0.00%,22.34%,0.00%,77.66%,44.68,0.00%,1.17%,15.57%,1.00%,82.26%,34.12,0.00%,0.41%,14.11%,5.56%,79.92%,44.89
+463,Kyperounta,,T,R,152.75,32.97327067,34.93911878,0.00%,0.00%,37.27%,35.37%,27.36%,180.65,0.00%,0.00%,36.57%,30.07%,33.37%,163.33,0.01%,0.00%,28.45%,19.13%,52.42%,114.28
+529,Sylikou,,T,R,148.07,32.88971487,34.83195196,4.65%,0.00%,48.11%,46.52%,0.72%,240.44,14.53%,0.00%,23.01%,20.89%,41.57%,123.21,13.53%,0.00%,20.01%,9.01%,57.46%,80.57
+640,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+641,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+642,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+643,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+644,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+645,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+646,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+647,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+648,Lefkosia,Agioi Omologhites,T,H,147.40,33.3482423,35.15625935,41.69%,0.00%,53.33%,4.98%,0.00%,163.28,33.38%,0.00%,39.96%,6.72%,19.95%,133.45,17.95%,0.00%,42.27%,14.33%,25.45%,145.47
+541,Agyia,Tashlik Yaka,N,H,1.00,33.57941047,35.1075339,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,1.24%,0.17%,98.59%,3.00
+543,Agia Marina (Skillouras),Kokkinoyia,N,R,84.86,33.11370469,35.24776625,97.09%,0.00%,2.91%,0.00%,0.00%,102.91,73.28%,0.00%,5.68%,0.00%,21.04%,84.64,57.85%,0.00%,4.47%,0.08%,37.59%,67.04
+558,Ambelikou,Toumpalin tou Mavrou,T,H,62.12,32.8160968,35.13543356,0.44%,0.00%,21.24%,2.60%,75.71%,50.74,25.77%,0.00%,16.67%,1.55%,56.01%,63.76,34.46%,0.00%,15.42%,2.18%,47.94%,71.85
+585,Ambelikou,Toumpalin tou Mavrou,T,H,62.12,32.8160968,35.13543356,0.44%,0.00%,21.24%,2.60%,75.71%,50.74,25.77%,0.00%,16.67%,1.55%,56.01%,63.76,34.46%,0.00%,15.42%,2.18%,47.94%,71.85
+613,Karavostasi,,T,H,80.78,32.81133236,35.14184338,0.00%,0.00%,6.63%,11.85%,81.53%,48.79,7.94%,0.00%,16.98%,19.65%,55.42%,100.86,16.91%,0.00%,14.91%,15.32%,52.87%,92.68
+626,Kokkina,Kakoskali (Ayia Eleni),Ts,H,37.15,32.61376669,35.18038332,1.21%,0.00%,20.51%,0.58%,77.69%,44.00,4.30%,0.00%,17.43%,0.38%,77.89%,40.31,1.80%,0.00%,12.28%,0.26%,85.66%,27.13
+627,Korakou,Avgolemou,T,R,172.31,32.88844482,35.04053812,0.00%,0.00%,30.70%,61.69%,7.61%,246.48,0.90%,0.00%,27.16%,40.18%,31.76%,175.77,1.54%,0.00%,18.89%,18.45%,61.12%,94.67
+632,Kyra,Kaminia,N,H,110.20,33.06469513,35.21608824,85.05%,0.00%,14.95%,0.00%,0.00%,114.95,90.71%,0.00%,9.23%,0.05%,0.00%,109.34,93.69%,0.00%,6.29%,0.02%,0.01%,106.32
+633,Kyra,Kounouppa (Kournouppes),N,H,62.58,33.03953987,35.21607387,7.54%,0.00%,0.00%,0.00%,92.46%,7.54,58.10%,0.00%,6.49%,4.21%,31.20%,83.71,79.12%,0.00%,6.46%,1.48%,12.94%,96.48
+631,Kyra,Ayios Yeorgios (Kambin tou Ayiou Yeorgiou),N,H,100.85,33.07508965,35.22554035,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,99.49%,0.00%,0.51%,0.00%,0.00%,100.51,97.96%,0.00%,2.04%,0.00%,0.00%,102.04
+630,Kyra,,T,H-R,181.54,33.06207608,35.20299529,13.11%,0.00%,30.60%,47.27%,9.02%,216.11,40.44%,0.00%,23.38%,30.26%,5.92%,177.98,59.41%,0.00%,20.05%,17.01%,3.54%,150.52
+635,Lefka,Haїt-lik,T,H-R,230.16,32.84787313,35.11054784,1.41%,0.00%,28.84%,69.67%,0.08%,268.10,16.14%,0.00%,27.54%,52.08%,4.25%,227.45,23.31%,0.00%,27.23%,39.05%,10.41%,194.92
+655,Louroutzina,Kokkinokremmos (Kokkinokafkalla),N,H,8.94,33.46498785,35.0246796,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,5.04%,0.00%,94.96%,10.09,0.00%,0.00%,7.81%,0.37%,91.83%,16.72
+660,Margi,Ayia Thekli,N,H,81.36,33.32738997,35.02310856,37.22%,0.00%,21.90%,19.74%,21.13%,140.26,16.79%,0.00%,16.58%,6.21%,60.42%,68.57,9.97%,0.00%,9.40%,2.16%,78.47%,35.25
+662,Mitsero,,T,H,177.91,33.12738259,35.04175402,0.00%,0.00%,33.34%,60.33%,6.32%,247.69,2.32%,0.00%,24.88%,38.76%,34.03%,168.38,8.93%,0.00%,20.23%,22.75%,48.09%,117.65
+666,Morfou,Ambelia,N,H,107.82,32.99562122,35.2513209,91.62%,0.00%,7.62%,0.00%,0.76%,106.87,90.05%,0.00%,9.79%,0.00%,0.16%,109.63,86.16%,0.00%,10.41%,0.00%,3.44%,106.97
+667,Morfou,Ambelia,N,H,107.82,32.99562122,35.2513209,91.62%,0.00%,7.62%,0.00%,0.76%,106.87,90.05%,0.00%,9.79%,0.00%,0.16%,109.63,86.16%,0.00%,10.41%,0.00%,3.44%,106.97
+665,Morfou,Σπήλιοι,N,H,105.75,32.99698583,35.24762728,97.74%,0.00%,2.26%,0.00%,0.00%,102.26,94.67%,0.00%,5.24%,0.00%,0.09%,105.15,89.96%,0.00%,9.77%,0.12%,0.15%,109.85
+669,Morfou,Iatrou,N,H,106.65,33.03246569,35.21774439,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,89.38%,0.00%,9.54%,0.97%,0.12%,111.36,80.38%,0.00%,11.57%,1.69%,6.36%,108.59
+664,Morfou,Toumpa tou Skourou (?),N,R,113.48,33.00065595,35.22310083,80.21%,0.00%,19.68%,0.11%,0.00%,119.91,79.76%,3.10%,14.85%,0.30%,1.99%,110.36,83.19%,1.08%,13.03%,0.31%,2.40%,110.17
+668,Morfou,Ambelia (Kallinikos),N,H,111.26,32.99507971,35.21053132,96.98%,0.00%,2.14%,0.40%,0.47%,102.47,76.91%,0.00%,14.74%,1.73%,6.62%,111.57,72.22%,0.00%,16.14%,5.07%,6.56%,119.73
+673,Orounta,Kserolakkos,T,R,89.59,33.09700332,35.10272127,37.38%,0.00%,10.43%,3.85%,48.34%,69.78,26.24%,0.00%,14.93%,17.34%,41.49%,108.12,28.46%,0.00%,12.83%,12.25%,46.46%,90.88
+674,Orounta,Kserolakkos,T,R,89.59,33.09700332,35.10272127,37.38%,0.00%,10.43%,3.85%,48.34%,69.78,26.24%,0.00%,14.93%,17.34%,41.49%,108.12,28.46%,0.00%,12.83%,12.25%,46.46%,90.88
+675,Pentayia,Myloi,N,R,118.00,32.88324149,35.14756288,88.85%,0.00%,8.80%,0.00%,2.35%,106.46,68.45%,0.00%,19.52%,3.78%,8.25%,118.83,67.99%,0.00%,19.72%,7.09%,5.20%,128.70
+676,Pentayia,Myloi,N,R,118.00,32.88324149,35.14756288,88.85%,0.00%,8.80%,0.00%,2.35%,106.46,68.45%,0.00%,19.52%,3.78%,8.25%,118.83,67.99%,0.00%,19.72%,7.09%,5.20%,128.70
+677,Peristerona,Aspoyeia,T,R,126.72,33.08192952,35.12753919,8.69%,0.00%,10.97%,3.07%,77.27%,39.84,19.46%,0.00%,24.68%,36.61%,19.24%,178.67,33.94%,0.00%,22.23%,27.75%,16.08%,161.66
+678,Peristeronari,,N,R,116.38,32.86216827,35.13524471,48.51%,0.00%,38.75%,0.00%,12.74%,126.01,55.46%,0.00%,24.68%,3.10%,16.76%,114.12,61.49%,0.00%,20.46%,2.20%,15.86%,109.00
+583,Fillia,Agriogadaros (Arkogadaros),N,H,104.51,33.10638755,35.19784191,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,93.06%,0.00%,6.13%,0.07%,0.74%,105.54,90.60%,0.00%,8.66%,0.03%,0.72%,107.99
+566,Khrysiliou,Ayios Sergis,N,H,109.02,33.01497976,35.20968788,92.95%,0.00%,4.89%,0.00%,2.16%,102.74,80.76%,0.00%,15.61%,0.86%,2.77%,114.57,84.67%,0.00%,11.27%,0.84%,3.22%,109.74
+567,Khrysiliou,Ayios Sergis,N,H,109.02,33.01497976,35.20968788,92.95%,0.00%,4.89%,0.00%,2.16%,102.74,80.76%,0.00%,15.61%,0.86%,2.77%,114.57,84.67%,0.00%,11.27%,0.84%,3.22%,109.74
+703,Agios Dimitrianos,,N,R,127.91,32.55033601,34.9068008,0.00%,0.00%,37.57%,54.81%,7.61%,239.58,10.49%,0.00%,21.83%,10.59%,57.09%,85.91,11.37%,0.00%,17.67%,3.84%,67.12%,58.23
+724,Arodhes,,N,R,73.29,32.40533274,34.93877157,35.57%,0.00%,14.25%,0.62%,49.55%,65.95,8.43%,0.00%,18.07%,14.23%,59.27%,87.25,5.10%,0.00%,18.20%,8.39%,68.31%,66.67
+757,Kathikas,Shiromas,T,H,88.62,32.42585399,34.91549783,0.00%,0.00%,30.07%,16.20%,53.73%,108.74,0.00%,0.00%,23.38%,12.13%,64.49%,83.16,5.50%,0.00%,20.19%,9.36%,64.96%,73.95
+906,Poli Chrysochous,Kokkina,N,H-R,93.58,32.41117969,35.03077476,63.03%,0.00%,20.31%,0.40%,16.26%,104.86,31.13%,0.00%,18.04%,7.47%,43.36%,89.62,31.08%,0.00%,16.91%,7.12%,44.89%,86.26
+907,Poli Chrysochous,Kokkina,N,H-R,93.58,32.41117969,35.03077476,63.03%,0.00%,20.31%,0.40%,16.26%,104.86,31.13%,0.00%,18.04%,7.47%,43.36%,89.62,31.08%,0.00%,16.91%,7.12%,44.89%,86.26
+908,Poli Chrysochous,Kokkina,N,H-R,93.58,32.41117969,35.03077476,63.03%,0.00%,20.31%,0.40%,16.26%,104.86,31.13%,0.00%,18.04%,7.47%,43.36%,89.62,31.08%,0.00%,16.91%,7.12%,44.89%,86.26
+909,Poli Chrysochous,Kokkina,N,H-R,93.58,32.41117969,35.03077476,63.03%,0.00%,20.31%,0.40%,16.26%,104.86,31.13%,0.00%,18.04%,7.47%,43.36%,89.62,31.08%,0.00%,16.91%,7.12%,44.89%,86.26
+910,Poli Chrysochous,Kokkina,N,H-R,93.58,32.41117969,35.03077476,63.03%,0.00%,20.31%,0.40%,16.26%,104.86,31.13%,0.00%,18.04%,7.47%,43.36%,89.62,31.08%,0.00%,16.91%,7.12%,44.89%,86.26
+911,Poli Chrysochous,Kokkina,N,H-R,93.58,32.41117969,35.03077476,63.03%,0.00%,20.31%,0.40%,16.26%,104.86,31.13%,0.00%,18.04%,7.47%,43.36%,89.62,31.08%,0.00%,16.91%,7.12%,44.89%,86.26
+937,Stroumbi,,N,R,130.89,32.4833329,34.8833339,31.77%,0.00%,38.68%,15.30%,14.25%,155.03,23.03%,0.00%,28.15%,20.50%,28.31%,140.84,21.80%,0.00%,22.06%,10.29%,45.84%,96.80
+747,Fasoula,Melanouthkia,Ts,H (?),100.27,32.62959949,34.74495393,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,99.20%,0.00%,0.80%,0.00%,0.00%,100.80
+726,Chloraka,Morozoes/Ellinospilioi,N,H,91.48,32.40089022,34.792547,0.08%,0.00%,16.20%,0.00%,83.72%,32.48,7.32%,0.00%,24.57%,20.67%,47.44%,118.47,6.22%,0.00%,26.82%,21.21%,45.74%,123.50
+730,Chloraka,,N,H,248.73,32.40858398,34.80127337,0.00%,0.00%,35.29%,64.71%,0.00%,264.71,0.00%,0.00%,30.04%,65.80%,4.16%,257.48,0.39%,0.00%,29.15%,55.11%,15.35%,224.01
+732,Choli,,T,H,45.24,32.44542934,34.97949192,0.00%,0.00%,15.63%,1.52%,82.85%,35.81,0.00%,0.00%,23.19%,2.99%,73.82%,55.35,3.67%,0.00%,16.57%,2.58%,77.18%,44.55
+234,Kormakitis,Patsallies,N,H,105.48,33.0001346,35.33200581,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,91.82%,0.00%,8.17%,0.01%,0.00%,108.19,91.89%,0.00%,7.97%,0.14%,0.00%,108.25
+392,Akrotiri,,Ν,H-R,11.92,32.95832842,34.56850447,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,15.31%,0.00%,1.91%,0.00%,82.78%,19.13,10.53%,0.00%,3.05%,0.00%,86.42%,16.63
+408,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+409,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+410,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+411,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+412,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+413,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+414,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+415,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+416,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+417,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+418,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+419,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+420,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+421,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+422,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+423,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+424,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+425,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+426,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+427,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+428,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+429,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+430,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+431,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+432,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+433,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+434,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+435,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+436,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+437,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+438,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+439,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+440,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+441,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+442,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+443,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+444,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+445,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+446,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+447,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+448,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+449,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+450,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+451,Episkopi,Ayios Ermoyenis,Τ,H-R,60.23,32.89065447,34.66439692,0.00%,0.00%,23.78%,0.00%,76.22%,47.57,22.79%,9.91%,19.76%,0.27%,47.28%,63.11,40.97%,10.85%,14.34%,0.12%,33.72%,70.01
+464,Lemesos,,T,R,216.34,33.06623589,34.69031315,0.00%,0.00%,38.66%,61.34%,0.00%,261.34,3.13%,0.00%,42.87%,40.98%,13.02%,211.82,2.44%,0.00%,36.77%,33.30%,27.49%,175.87
+561,Argaki,Mantra Halouta,N,H-R,149.49,33.03811526,35.18299051,57.65%,0.00%,25.01%,15.89%,1.45%,155.35,66.10%,0.00%,17.81%,14.77%,1.32%,146.04,65.39%,0.00%,17.61%,15.49%,1.51%,147.08
+586,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+587,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+588,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+589,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+590,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+591,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+592,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+593,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+594,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+595,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+596,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+597,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+598,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+599,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+600,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+601,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+602,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+603,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+604,Galini,Kournouta,T,H-R,62.66,32.80886187,35.1372294,0.00%,0.00%,27.88%,1.40%,70.72%,59.95,0.25%,0.00%,15.22%,11.04%,73.49%,63.81,8.98%,0.00%,15.35%,8.18%,67.48%,64.23
+206,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+213,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+214,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+215,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+216,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+217,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+218,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+219,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+220,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+221,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+222,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+223,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+224,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+225,Keryneia,,N,H,155.51,33.31614156,35.34113631,0.00%,0.00%,24.69%,49.16%,26.15%,196.86,0.55%,8.72%,25.81%,29.14%,35.78%,139.60,1.30%,3.09%,24.25%,26.75%,44.61%,130.06
+614,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+616,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+617,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+618,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+619,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+620,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+621,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+622,Katydata,,N,H-R,72.42,32.89009358,35.07968782,11.04%,0.00%,16.20%,2.50%,70.26%,50.95,3.64%,0.00%,21.63%,16.85%,57.89%,97.43,2.41%,0.00%,15.58%,11.77%,70.24%,68.89
+5,Agia Napa,Pethameni,N,H-R,120.88,34.00844721,34.98441069,9.27%,0.00%,23.57%,24.88%,42.28%,131.06,4.95%,0.00%,24.11%,24.88%,46.06%,127.81,4.46%,0.00%,21.70%,18.64%,55.20%,103.77
+4,Agia Napa,Ammos tou Kampouri,N,R,40.96,34.02504672,34.9784778,18.39%,0.00%,19.61%,0.00%,62.00%,57.60,13.65%,0.00%,10.96%,0.16%,75.24%,36.04,11.00%,0.00%,8.40%,0.48%,80.12%,29.23
+51,Avgorou,Vrisoudia,N,H,14.34,33.81877044,35.06415071,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,11.85%,0.00%,88.15%,23.70,0.00%,0.00%,9.66%,0.00%,90.34%,19.33
+8,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+9,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+10,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+11,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+12,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+13,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+14,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+15,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+16,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+17,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+18,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+19,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+20,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+21,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+22,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+23,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+24,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+25,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+26,Agia Napa,Makronissos,T,H-R,33.14,33.95310237,34.98073849,5.08%,0.00%,11.24%,0.00%,83.68%,27.55,2.20%,0.00%,12.56%,1.26%,83.98%,31.11,11.69%,0.00%,13.48%,0.71%,74.12%,40.77
+46,Akanthou,Niati,N,H,108.64,33.77695074,35.39006612,72.64%,0.00%,24.73%,0.00%,2.63%,122.11,82.70%,0.00%,9.51%,0.00%,7.79%,101.72,89.07%,0.00%,6.52%,0.00%,4.41%,102.10
+50,Ardana,Plaki,N,R,107.27,33.88280576,35.3804271,94.82%,0.00%,5.18%,0.00%,0.00%,105.18,91.83%,0.00%,8.17%,0.00%,0.00%,108.17,91.53%,0.00%,8.47%,0.00%,0.00%,108.47
+2,Achna,Appidia/Ayios Georgios Teratsiotis,N,H-R,62.84,34.01358993,35.03800545,56.71%,0.00%,4.52%,0.00%,38.77%,65.75,38.88%,0.00%,8.00%,0.00%,53.12%,54.89,44.56%,0.00%,11.27%,0.26%,43.91%,67.88
+56,Davlos,Varkes,T,R,11.63,33.89576325,35.42097626,0.00%,0.00%,0.00%,0.00%,100.00%,0.00,0.00%,0.00%,5.93%,0.26%,93.81%,12.64,0.00%,0.00%,10.12%,0.67%,89.21%,22.26
+87,Koma tou Yialou,Ayia Solomoni,T,H,39.93,34.14003352,35.42826597,0.00%,0.00%,9.45%,0.00%,90.55%,18.90,1.12%,0.00%,11.27%,4.28%,83.33%,36.51,16.46%,0.00%,9.90%,9.37%,64.27%,64.37
+106,Paralimni,Protaras,N,R,143.88,34.03205939,35.03126973,47.13%,0.00%,36.09%,7.87%,8.91%,142.92,27.12%,0.00%,33.38%,19.46%,20.04%,152.27,31.19%,0.00%,30.04%,15.06%,23.70%,136.46
+253,Lapithos,Ayios Minas,N,H,264.95,33.18267647,35.33874089,0.00%,0.00%,16.86%,83.14%,0.00%,283.14,8.06%,0.00%,19.44%,72.50%,0.00%,264.43,17.27%,0.00%,18.19%,64.54%,0.00%,247.27
+254,Myrtou,Sfayion,T,R,137.82,33.07641962,35.31068951,50.64%,0.00%,21.74%,7.75%,19.88%,117.35,31.62%,0.00%,21.27%,21.66%,25.44%,139.15,37.94%,0.00%,18.94%,27.05%,16.07%,156.96
+255,Myrtou,Sfayion,T,R,137.82,33.07641962,35.31068951,50.64%,0.00%,21.74%,7.75%,19.88%,117.35,31.62%,0.00%,21.27%,21.66%,25.44%,139.15,37.94%,0.00%,18.94%,27.05%,16.07%,156.96
+256,Myrtou,Sfayion,T,R,137.82,33.07641962,35.31068951,50.64%,0.00%,21.74%,7.75%,19.88%,117.35,31.62%,0.00%,21.27%,21.66%,25.44%,139.15,37.94%,0.00%,18.94%,27.05%,16.07%,156.96
+257,Myrtou,Sfayion,T,R,137.82,33.07641962,35.31068951,50.64%,0.00%,21.74%,7.75%,19.88%,117.35,31.62%,0.00%,21.27%,21.66%,25.44%,139.15,37.94%,0.00%,18.94%,27.05%,16.07%,156.96
+313,Larnaka,Dasos tis Alikis,T,H,256.36,33.62986448,34.910284,0.00%,0.00%,40.70%,59.30%,0.00%,259.30,0.00%,0.00%,39.61%,60.39%,0.00%,260.39,3.83%,0.00%,42.77%,53.34%,0.06%,249.40
+317,Larnaka,Dasos tis Alikis,T,H,256.36,33.62986448,34.910284,0.00%,0.00%,40.70%,59.30%,0.00%,259.30,0.00%,0.00%,39.61%,60.39%,0.00%,260.39,3.83%,0.00%,42.77%,53.34%,0.06%,249.40
+318,Larnaka,Dasos tis Alikis,T,H,256.36,33.62986448,34.910284,0.00%,0.00%,40.70%,59.30%,0.00%,259.30,0.00%,0.00%,39.61%,60.39%,0.00%,260.39,3.83%,0.00%,42.77%,53.34%,0.06%,249.40
+319,Larnaka,Dasos tis Alikis,T,H,256.36,33.62986448,34.910284,0.00%,0.00%,40.70%,59.30%,0.00%,259.30,0.00%,0.00%,39.61%,60.39%,0.00%,260.39,3.83%,0.00%,42.77%,53.34%,0.06%,249.40
+329,Larnaka,,T,H,155.17,33.63528268,34.93620514,84.34%,0.00%,8.05%,0.00%,7.61%,100.43,24.60%,0.00%,25.77%,35.70%,13.94%,183.22,13.20%,0.00%,30.41%,35.94%,20.45%,181.85
+338,Pergamos,Kafkalla,Ts,H,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+362,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+363,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+365,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+366,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+367,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+377,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+378,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+379,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+380,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+381,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+382,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+386,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+387,Agios Tychonas,,T,R,15.95,33.70130045,35.02924242,0.00%,0.00%,0.00%,0.22%,99.78%,0.67,0.00%,0.00%,9.30%,0.48%,90.22%,20.05,8.03%,0.00%,8.62%,0.62%,82.73%,27.13
+364,Agios Tychonas,,T,R,137.99,33.15362881,34.71461448,0.00%,0.00%,39.34%,38.83%,21.82%,195.19,2.40%,0.00%,34.83%,17.74%,45.03%,125.29,13.81%,0.00%,27.25%,8.39%,50.54%,93.49
+368,Agios Tychonas,,T,R,137.99,33.15362881,34.71461448,0.00%,0.00%,39.34%,38.83%,21.82%,195.19,2.40%,0.00%,34.83%,17.74%,45.03%,125.29,13.81%,0.00%,27.25%,8.39%,50.54%,93.49
+376,Agios Tychonas,,T,R,137.99,33.15362881,34.71461448,0.00%,0.00%,39.34%,38.83%,21.82%,195.19,2.40%,0.00%,34.83%,17.74%,45.03%,125.29,13.81%,0.00%,27.25%,8.39%,50.54%,93.49
+384,Agios Tychonas,,T,R,137.99,33.15362881,34.71461448,0.00%,0.00%,39.34%,38.83%,21.82%,195.19,2.40%,0.00%,34.83%,17.74%,45.03%,125.29,13.81%,0.00%,27.25%,8.39%,50.54%,93.49
+385,Agios Tychonas,,T,R,137.99,33.15362881,34.71461448,0.00%,0.00%,39.34%,38.83%,21.82%,195.19,2.40%,0.00%,34.83%,17.74%,45.03%,125.29,13.81%,0.00%,27.25%,8.39%,50.54%,93.49
+388,Agios Tychonas,,T,R,137.99,33.15362881,34.71461448,0.00%,0.00%,39.34%,38.83%,21.82%,195.19,2.40%,0.00%,34.83%,17.74%,45.03%,125.29,13.81%,0.00%,27.25%,8.39%,50.54%,93.49
+394,Alassa,Kampos,T,H,93.67,32.9359846,34.75387762,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,92.69%,0.00%,1.31%,0.00%,6.00%,95.31,79.78%,0.00%,2.63%,0.22%,17.37%,85.71
+395,Alassa,Kampos,T,H,93.67,32.9359846,34.75387762,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,92.69%,0.00%,1.31%,0.00%,6.00%,95.31,79.78%,0.00%,2.63%,0.22%,17.37%,85.71
+742,Emba,Aspra Chomata,N,H-R,46.20,32.43342585,34.80473281,0.00%,0.00%,20.38%,0.00%,79.62%,40.75,4.63%,0.00%,19.33%,0.18%,75.86%,43.83,7.76%,0.00%,20.82%,1.54%,69.88%,54.02
+743,Emba,Limnarka,N,R,82.28,32.42532368,34.79628604,0.00%,0.00%,16.01%,8.70%,75.28%,58.13,8.14%,0.00%,23.52%,12.61%,55.73%,93.00,5.65%,0.00%,22.40%,15.09%,56.86%,95.72
+932,Prodromi,Chalimes,N,R,98.83,32.4044934,35.03665915,88.72%,0.00%,1.10%,9.27%,0.90%,118.74,68.61%,0.00%,11.25%,3.04%,17.09%,100.24,45.68%,0.00%,12.16%,2.50%,39.66%,77.50
+869,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+870,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+871,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+872,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+873,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+874,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+875,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+876,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+877,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+878,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+879,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+880,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+881,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+882,Paphos,Palaiokastron,T,H,64.03,32.40521149,34.77717657,0.00%,100.00%,0.00%,0.00%,0.00%,0.00,1.20%,47.52%,19.96%,13.31%,18.00%,81.07,0.58%,21.54%,21.62%,22.40%,33.86%,111.02
+808,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+809,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+810,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+811,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+812,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+813,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+814,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+815,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+816,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+817,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+818,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+819,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+820,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+821,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+822,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+823,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+824,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+825,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+826,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+827,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+828,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+829,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+830,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+831,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+832,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+833,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+834,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+835,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+836,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+837,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+838,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+839,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+840,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+841,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+842,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+843,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+844,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+845,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+846,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+847,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+848,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+849,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+850,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+851,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+852,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+853,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+854,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+855,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+856,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+857,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+858,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+859,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+860,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+861,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+862,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+863,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+864,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+865,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+866,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+867,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+868,Paphos,Glyky Nero,T,H-R,145.82,32.41867827,34.7544378,0.00%,0.00%,46.37%,18.80%,34.82%,149.16,0.00%,0.00%,35.08%,24.49%,40.44%,143.61,0.00%,0.71%,30.19%,28.10%,41.00%,144.68
+638,Lefkosia,Agia Paraskevi,T,H-R,165.16,33.37081257,35.15652793,0.00%,0.00%,55.44%,24.28%,20.28%,183.72,0.55%,0.00%,42.74%,22.80%,33.91%,154.44,4.18%,0.00%,42.86%,22.47%,30.49%,157.31
+639,Lefkosia,Agia Paraskevi,T,H-R,165.16,33.37081257,35.15652793,0.00%,0.00%,55.44%,24.28%,20.28%,183.72,0.55%,0.00%,42.74%,22.80%,33.91%,154.44,4.18%,0.00%,42.86%,22.47%,30.49%,157.31
+653,Lefkosia,,T,R,145.51,33.35179182,35.17448436,12.86%,0.00%,35.95%,27.31%,23.88%,166.69,10.11%,0.00%,33.98%,16.24%,39.68%,126.78,7.58%,0.00%,38.06%,19.79%,34.57%,143.05
+571,Dali,Vrontolaktis,T,H-R,195.42,33.41364925,35.01356121,0.00%,0.00%,22.42%,66.61%,10.97%,244.66,5.80%,0.00%,23.48%,42.00%,28.71%,178.78,19.33%,0.00%,18.42%,35.55%,26.70%,162.82
+332,Meneou,Agroktima,T,H-R,106.40,33.59407356,34.85492034,92.44%,0.00%,0.00%,0.00%,7.56%,92.44,67.43%,0.00%,10.81%,6.67%,15.10%,109.04,54.59%,0.00%,13.96%,11.74%,19.71%,117.72
+333,Meneou,Agroktima,T,H-R,106.40,33.59407356,34.85492034,92.44%,0.00%,0.00%,0.00%,7.56%,92.44,67.43%,0.00%,10.81%,6.67%,15.10%,109.04,54.59%,0.00%,13.96%,11.74%,19.71%,117.72
+628,Kythrea,Mandra tou Kounia,T,H-R,92.41,33.50389884,35.26575337,94.84%,0.00%,0.00%,0.00%,5.16%,94.84,83.94%,0.00%,1.90%,0.00%,14.16%,87.74,89.55%,0.00%,2.54%,0.01%,7.90%,94.66
+629,Kythrea,Mandra tou Kounia,T,H-R,92.41,33.50389884,35.26575337,94.84%,0.00%,0.00%,0.00%,5.16%,94.84,83.94%,0.00%,1.90%,0.00%,14.16%,87.74,89.55%,0.00%,2.54%,0.01%,7.90%,94.66
+3,Agia Napa,Ambas,N,H-R,116.11,33.95888815,34.98886848,30.30%,0.00%,42.30%,2.40%,24.99%,122.12,30.82%,0.00%,39.98%,3.70%,25.50%,121.88,31.05%,0.00%,31.96%,3.12%,33.87%,104.34
+6,Agia Napa,Tornos,T,H-R,45.04,33.93855527,34.99041315,0.00%,0.00%,20.05%,0.00%,79.95%,40.09,0.23%,0.00%,23.81%,0.00%,75.97%,47.84,2.89%,0.00%,21.19%,0.64%,75.28%,47.19
+7,Agia Napa,Filina,T,R,30.66,33.94965051,34.99365492,0.00%,0.00%,1.70%,0.00%,98.30%,3.39,0.00%,0.00%,17.82%,1.61%,80.57%,40.47,9.53%,0.00%,14.54%,3.16%,72.76%,48.11
+33,Agios Iacovos,Asproyeia,N,H,23.71,33.80621306,35.33771031,0.00%,0.00%,10.51%,0.00%,89.49%,21.03,12.63%,0.00%,3.25%,0.00%,84.12%,19.13,26.73%,0.00%,2.12%,0.00%,71.16%,30.96
+43,Agios Theodoros,Alaas,N,H,65.88,34.0324572,35.32556656,78.18%,0.00%,0.00%,0.00%,21.82%,78.18,61.84%,0.00%,0.00%,0.00%,38.16%,61.84,57.24%,0.00%,0.19%,0.00%,42.57%,57.62
+129,Rizokarpaso,Tsambres,T,H,98.69,34.36554578,35.62381881,85.67%,0.00%,14.33%,0.00%,0.00%,114.33,66.90%,0.00%,11.27%,4.40%,17.43%,102.65,58.75%,0.00%,7.87%,1.53%,31.85%,79.09
+130,Rizokarpaso,Tsambres,T,H,98.69,34.36554578,35.62381881,85.67%,0.00%,14.33%,0.00%,0.00%,114.33,66.90%,0.00%,11.27%,4.40%,17.43%,102.65,58.75%,0.00%,7.87%,1.53%,31.85%,79.09
+131,Rizokarpaso,Tsambres,T,H,98.69,34.36554578,35.62381881,85.67%,0.00%,14.33%,0.00%,0.00%,114.33,66.90%,0.00%,11.27%,4.40%,17.43%,102.65,58.75%,0.00%,7.87%,1.53%,31.85%,79.09
+132,Rizokarpaso,Tsambres,T,H,98.69,34.36554578,35.62381881,85.67%,0.00%,14.33%,0.00%,0.00%,114.33,66.90%,0.00%,11.27%,4.40%,17.43%,102.65,58.75%,0.00%,7.87%,1.53%,31.85%,79.09
+133,Rizokarpaso,Tsambres,T,H,98.69,34.36554578,35.62381881,85.67%,0.00%,14.33%,0.00%,0.00%,114.33,66.90%,0.00%,11.27%,4.40%,17.43%,102.65,58.75%,0.00%,7.87%,1.53%,31.85%,79.09
+134,Rizokarpaso,Tsambres,T,H,98.69,34.36554578,35.62381881,85.67%,0.00%,14.33%,0.00%,0.00%,114.33,66.90%,0.00%,11.27%,4.40%,17.43%,102.65,58.75%,0.00%,7.87%,1.53%,31.85%,79.09
+135,Rizokarpaso,Kremmasti,N,H-R,96.36,34.38455249,35.63144672,100.00%,0.00%,0.00%,0.00%,0.00%,100.00,98.62%,0.00%,1.35%,0.00%,0.03%,101.32,79.85%,0.00%,3.96%,0.00%,16.19%,87.76
+277,Aradippou,Panayia ton Amplelion,Ts,H-R,107.69,33.56613209,34.96110601,85.27%,0.00%,12.44%,1.61%,0.68%,114.98,62.33%,0.00%,17.05%,3.06%,17.56%,105.61,66.20%,0.00%,16.54%,1.07%,16.19%,102.48
+301,Larnaka,,T,H,259.74,33.62313486,34.92513441,0.00%,0.00%,44.71%,55.29%,0.00%,255.29,0.00%,0.00%,36.32%,63.68%,0.00%,263.68,0.00%,0.07%,39.55%,60.38%,0.00%,260.24
+302,Larnaka,,T,R,258.29,33.61562854,34.92468851,0.00%,0.00%,46.06%,53.94%,0.00%,253.94,0.00%,0.00%,37.45%,62.55%,0.00%,262.55,0.00%,0.00%,40.74%,58.97%,0.29%,258.38
+303,Larnaka,,T,H,239.90,33.61025744,34.92358988,0.00%,0.00%,44.66%,46.77%,8.57%,229.63,3.17%,0.00%,43.70%,51.09%,2.04%,243.84,1.10%,0.00%,41.88%,53.78%,3.23%,246.22
+304,Larnaka,,T,H,239.90,33.61025744,34.92358988,0.00%,0.00%,44.66%,46.77%,8.57%,229.63,3.17%,0.00%,43.70%,51.09%,2.04%,243.84,1.10%,0.00%,41.88%,53.78%,3.23%,246.22
+305,Larnaka,,T,H,239.90,33.61025744,34.92358988,0.00%,0.00%,44.66%,46.77%,8.57%,229.63,3.17%,0.00%,43.70%,51.09%,2.04%,243.84,1.10%,0.00%,41.88%,53.78%,3.23%,246.22
+306,Larnaka,,T,H,239.90,33.61025744,34.92358988,0.00%,0.00%,44.66%,46.77%,8.57%,229.63,3.17%,0.00%,43.70%,51.09%,2.04%,243.84,1.10%,0.00%,41.88%,53.78%,3.23%,246.22
+307,Larnaka,,T,H,239.90,33.61025744,34.92358988,0.00%,0.00%,44.66%,46.77%,8.57%,229.63,3.17%,0.00%,43.70%,51.09%,2.04%,243.84,1.10%,0.00%,41.88%,53.78%,3.23%,246.22
+308,Larnaka,,T,H,258.54,33.6203825,34.92097733,0.00%,0.00%,43.54%,56.46%,0.00%,256.46,0.00%,0.00%,40.74%,59.26%,0.00%,259.26,0.00%,0.00%,40.09%,59.91%,0.00%,259.91
+309,Larnaka,,T,H,258.54,33.6203825,34.92097733,0.00%,0.00%,43.54%,56.46%,0.00%,256.46,0.00%,0.00%,40.74%,59.26%,0.00%,259.26,0.00%,0.00%,40.09%,59.91%,0.00%,259.91
+310,Larnaka,,T,H,258.54,33.6203825,34.92097733,0.00%,0.00%,43.54%,56.46%,0.00%,256.46,0.00%,0.00%,40.74%,59.26%,0.00%,259.26,0.00%,0.00%,40.09%,59.91%,0.00%,259.91
+311,Larnaka,,T,H,258.54,33.6203825,34.92097733,0.00%,0.00%,43.54%,56.46%,0.00%,256.46,0.00%,0.00%,40.74%,59.26%,0.00%,259.26,0.00%,0.00%,40.09%,59.91%,0.00%,259.91
+321,Larnaka,,Ts,H,259.16,33.61698635,34.92577411,0.00%,0.00%,42.67%,57.33%,0.00%,257.33,0.00%,0.00%,39.55%,60.45%,0.00%,260.45,0.00%,0.00%,40.30%,59.70%,0.00%,259.70
+322,Larnaka,,T,H,256.13,33.61750906,34.92677373,0.00%,0.00%,45.22%,54.78%,0.00%,254.78,0.00%,0.00%,45.21%,54.79%,0.00%,254.79,0.00%,0.00%,41.19%,58.81%,0.00%,258.81
+323,Larnaka,,T,H,256.13,33.61750906,34.92677373,0.00%,0.00%,45.22%,54.78%,0.00%,254.78,0.00%,0.00%,45.21%,54.79%,0.00%,254.79,0.00%,0.00%,41.19%,58.81%,0.00%,258.81
+324,Larnaka,,T,H,256.13,33.61750906,34.92677373,0.00%,0.00%,45.22%,54.78%,0.00%,254.78,0.00%,0.00%,45.21%,54.79%,0.00%,254.79,0.00%,0.00%,41.19%,58.81%,0.00%,258.81
+325,Larnaka,,T,H,256.13,33.61750906,34.92677373,0.00%,0.00%,45.22%,54.78%,0.00%,254.78,0.00%,0.00%,45.21%,54.79%,0.00%,254.79,0.00%,0.00%,41.19%,58.81%,0.00%,258.81
+326,Larnaka,,T,H,256.13,33.61750906,34.92677373,0.00%,0.00%,45.22%,54.78%,0.00%,254.78,0.00%,0.00%,45.21%,54.79%,0.00%,254.79,0.00%,0.00%,41.19%,58.81%,0.00%,258.81
+330,Larnaka,,T,H,256.13,33.61750906,34.92677373,0.00%,0.00%,45.22%,54.78%,0.00%,254.78,0.00%,0.00%,45.21%,54.79%,0.00%,254.79,0.00%,0.00%,41.19%,58.81%,0.00%,258.81
+331,Larnaka,,T,R,253.28,33.62758115,34.91610316,0.00%,0.00%,53.50%,46.50%,0.00%,246.50,0.00%,0.00%,44.11%,55.89%,0.00%,255.89,0.00%,0.00%,42.56%,57.44%,0.00%,257.44
+359,Agios Tychonas,Kampinarka,Ts,R,103.63,33.14990383,34.71979293,61.70%,0.00%,11.69%,0.00%,26.61%,85.07,50.34%,0.00%,19.84%,4.60%,25.22%,103.82,44.52%,0.00%,19.94%,12.53%,23.01%,121.99
+532,Trahoni,Merras,Ts,R,248.52,32.95860076,34.65894185,0.00%,0.00%,41.23%,58.77%,0.00%,258.77,0.30%,0.00%,38.08%,60.05%,1.57%,256.61,6.34%,0.00%,33.52%,52.27%,7.87%,230.19
+745,Emba,Throumperes,N,H-R,62.71,32.43062138,34.80751073,0.00%,0.00%,23.08%,2.56%,74.35%,53.86,0.06%,0.00%,22.13%,3.22%,74.60%,53.97,3.12%,0.00%,23.83%,9.84%,63.21%,80.30
+741,Emba,Petridia,Τ,H-R,73.45,32.42451764,34.79918777,0.00%,0.00%,18.42%,0.00%,81.58%,36.84,0.15%,0.00%,26.61%,8.73%,64.51%,79.56,2.01%,0.00%,24.82%,17.44%,55.74%,103.95
+762,Kouklia,Phones,T,R,105.94,32.57019938,34.70672018,0.95%,0.00%,36.46%,5.54%,57.05%,90.49,23.77%,13.04%,20.80%,13.38%,29.00%,105.53,33.25%,5.71%,22.56%,14.47%,24.00%,121.80
+763,Kouklia,Phones,T,R,105.94,32.57019938,34.70672018,0.95%,0.00%,36.46%,5.54%,57.05%,90.49,23.77%,13.04%,20.80%,13.38%,29.00%,105.53,33.25%,5.71%,22.56%,14.47%,24.00%,121.80
+764,Kouklia,Phones,T,R,105.94,32.57019938,34.70672018,0.95%,0.00%,36.46%,5.54%,57.05%,90.49,23.77%,13.04%,20.80%,13.38%,29.00%,105.53,33.25%,5.71%,22.56%,14.47%,24.00%,121.80
+765,Kouklia,Phones,T,R,105.94,32.57019938,34.70672018,0.95%,0.00%,36.46%,5.54%,57.05%,90.49,23.77%,13.04%,20.80%,13.38%,29.00%,105.53,33.25%,5.71%,22.56%,14.47%,24.00%,121.80
+766,Kouklia,Phones,T,R,105.94,32.57019938,34.70672018,0.95%,0.00%,36.46%,5.54%,57.05%,90.49,23.77%,13.04%,20.80%,13.38%,29.00%,105.53,33.25%,5.71%,22.56%,14.47%,24.00%,121.80
+770,Kouklia,Kato Alonia,T,H,79.66,32.5723203,34.70506323,0.00%,31.05%,19.14%,7.51%,42.30%,60.81,15.69%,14.92%,22.40%,3.44%,43.54%,70.83,34.14%,5.71%,20.55%,10.70%,28.90%,107.33
+63,Galinoporni,,T,H,109.65,34.30816351,35.52075814,88.16%,0.00%,0.00%,0.00%,11.84%,88.16,85.22%,0.00%,7.61%,1.74%,5.43%,105.66,73.18%,0.00%,12.48%,12.33%,2.01%,135.13
+41,Agios Theodoros,Troullin tou Kamilari,N,H,51.46,34.03407084,35.32543535,49.12%,0.00%,0.00%,0.00%,50.88%,49.12,52.60%,0.00%,0.00%,0.00%,47.40%,52.60,52.66%,0.00%,0.00%,0.00%,47.34%,52.66
+72,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+73,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+74,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+75,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+76,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+77,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+78,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+79,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+80,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+81,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+82,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+83,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+84,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+85,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+86,Koroveia,Kountoura Trachonia,T,H,100.24,34.30338974,35.49574905,87.14%,0.00%,12.86%,0.00%,0.00%,112.86,90.47%,0.00%,6.26%,0.00%,3.27%,102.99,76.82%,0.00%,4.03%,0.00%,19.16%,84.87
+149,Sotira,,N,H-R,144.31,33.90933121,34.97455149,0.00%,0.00%,35.58%,50.98%,13.44%,224.11,0.00%,0.00%,22.74%,22.38%,54.87%,112.63,0.01%,0.00%,20.76%,18.23%,61.01%,96.20
+35,Agios Serghios,,T,H,177.45,33.88113747,35.19473002,0.00%,0.00%,19.69%,63.25%,17.06%,229.13,4.29%,0.00%,22.40%,40.55%,32.76%,170.73,1.73%,0.00%,20.76%,29.75%,47.76%,132.49
+151,Trikomo,Ayios Sinesios,N,H-R,107.77,33.86578868,35.28625577,84.82%,0.00%,15.18%,0.00%,0.00%,115.18,95.27%,0.00%,4.73%,0.00%,0.00%,104.73,96.55%,0.00%,3.43%,0.00%,0.02%,103.41
+320,Larnaka,,T,R,257.70,33.628383,34.915645,0.00%,0.00%,41.21%,58.79%,0.00%,258.79,0.00%,0.00%,42.31%,57.69%,0.00%,257.69,0.00%,0.00%,43.38%,56.61%,0.00%,256.61
+547,Agia Marina (Xyliatou),,T,H-R,180.62,33.0575181,35.04982425,0.00%,0.00%,44.73%,55.27%,0.00%,255.27,1.26%,0.00%,25.39%,42.83%,30.52%,180.53,0.89%,0.00%,20.36%,21.48%,57.27%,106.06
+568,Dali,,T,H,237.68,33.41353705,35.01847738,0.00%,0.00%,32.65%,67.35%,0.00%,267.35,1.23%,0.00%,30.23%,61.65%,6.89%,246.63,5.20%,0.00%,26.21%,47.16%,21.44%,199.07
+569,Dali,,T,H,237.68,33.41353705,35.01847738,0.00%,0.00%,32.65%,67.35%,0.00%,267.35,1.23%,0.00%,30.23%,61.65%,6.89%,246.63,5.20%,0.00%,26.21%,47.16%,21.44%,199.07
+612,Karavostasi,,N,H-R,62.62,32.81560587,35.14143976,21.02%,0.00%,9.94%,3.01%,66.03%,49.92,30.46%,0.00%,12.05%,6.58%,50.91%,74.30,24.44%,0.00%,11.78%,5.22%,58.56%,63.65
+920,Poli Chrysochous,Evretades,Ν,H-R,56.47,32.4400788,35.04224218,0.00%,0.00%,26.00%,11.55%,62.45%,86.65,5.76%,0.00%,13.57%,1.74%,78.93%,38.12,15.25%,0.00%,12.54%,1.43%,70.77%,44.64
+912,Poli Chrysochous,Potamos (tou Myrmikof),T,H,35.21,32.43940629,35.04428591,0.00%,0.00%,3.14%,0.00%,96.86%,6.27,10.72%,0.00%,15.75%,1.77%,71.75%,47.54,21.26%,0.00%,13.58%,1.14%,64.03%,51.81
+637,Kaimakli,Agios Dimitrianos,T,H,179.61,33.37205218,35.18823123,49.86%,0.00%,38.98%,11.14%,0.02%,161.25,32.98%,0.00%,38.34%,24.95%,3.73%,184.51,20.59%,0.00%,37.65%,32.39%,9.37%,193.06
+207,Keryneia,,T,R,159.05,33.31972,35.34129,0.00%,0.00%,59.96%,25.37%,14.67%,196.04,0.36%,0.00%,39.39%,25.39%,34.86%,155.31,0.17%,2.10%,23.57%,26.16%,48.00%,125.80
+208,Keryneia,,T,R,159.05,33.31972,35.34129,0.00%,0.00%,59.96%,25.37%,14.67%,196.04,0.36%,0.00%,39.39%,25.39%,34.86%,155.31,0.17%,2.10%,23.57%,26.16%,48.00%,125.80
+209,Keryneia,,T,R,159.05,33.31972,35.34129,0.00%,0.00%,59.96%,25.37%,14.67%,196.04,0.36%,0.00%,39.39%,25.39%,34.86%,155.31,0.17%,2.10%,23.57%,26.16%,48.00%,125.80
+237,Larnaka tis Lapithou,Elia tis kampanas,N,H-R,149.80,33.13938435,35.30895763,0.00%,0.00%,25.93%,58.03%,16.04%,225.95,1.84%,0.00%,13.54%,32.27%,52.35%,125.73,23.72%,0.00%,9.36%,18.43%,48.50%,97.71
+238,Larnaka tis Lapithou,Elia tis kampanas,N,H-R,149.80,33.13938435,35.30895763,0.00%,0.00%,25.93%,58.03%,16.04%,225.95,1.84%,0.00%,13.54%,32.27%,52.35%,125.73,23.72%,0.00%,9.36%,18.43%,48.50%,97.71
+239,Larnaka tis Lapithou,Elia tis kampanas,N,H-R,149.80,33.13938435,35.30895763,0.00%,0.00%,25.93%,58.03%,16.04%,225.95,1.84%,0.00%,13.54%,32.27%,52.35%,125.73,23.72%,0.00%,9.36%,18.43%,48.50%,97.71
+240,Larnaka tis Lapithou,Elia tis kampanas,N,H-R,149.80,33.13938435,35.30895763,0.00%,0.00%,25.93%,58.03%,16.04%,225.95,1.84%,0.00%,13.54%,32.27%,52.35%,125.73,23.72%,0.00%,9.36%,18.43%,48.50%,97.71
+241,Larnaka tis Lapithou,Elia tis kampanas,N,H-R,149.80,33.13938435,35.30895763,0.00%,0.00%,25.93%,58.03%,16.04%,225.95,1.84%,0.00%,13.54%,32.27%,52.35%,125.73,23.72%,0.00%,9.36%,18.43%,48.50%,97.71
+288,Keumurji,Doutli Seki,N,H,141.05,33.25681392,35.2928957,26.79%,0.00%,25.00%,39.68%,8.53%,195.84,78.42%,0.00%,7.07%,7.92%,6.59%,116.32,80.42%,0.00%,7.91%,4.91%,6.76%,110.98
+397,Apeshia,Marathies (Marathkies),T,H,48.94,32.97179049,34.78438105,0.00%,0.00%,25.56%,0.00%,74.44%,51.12,2.06%,0.00%,19.49%,4.20%,74.25%,53.63,6.12%,0.00%,13.24%,3.16%,77.49%,42.07
+654,Lefkosia,,T,H,139.43,33.4034974,35.14602569,28.58%,0.00%,49.29%,7.74%,14.39%,150.38,18.66%,0.00%,43.92%,7.97%,29.45%,130.41,14.30%,0.00%,42.61%,12.66%,30.43%,137.50
+709,Akamas,Ayios Konon,N,H-R,116.96,32.29227728,35.04873513,71.60%,0.00%,27.90%,0.50%,0.00%,128.90,89.01%,0.00%,10.50%,0.49%,0.00%,111.48,89.69%,0.00%,10.14%,0.18%,0.00%,110.49
+935,Steni,,N,H,37.26,32.4776241,35.01200132,22.67%,0.00%,13.74%,1.04%,62.55%,53.26,20.28%,0.00%,6.21%,0.11%,73.41%,33.02,13.30%,0.00%,6.04%,0.04%,80.62%,25.50
